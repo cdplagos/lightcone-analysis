@@ -22,6 +22,8 @@ import numpy as np
 from scipy import interpolate
 import common
 import os
+import math 
+import h5py
 
 ##################################
 
@@ -43,7 +45,7 @@ Av = 4
 h0 = 0.677
 zsun = 0.0189
 
-def prepare_data(hdf5_data, subvols, lightcone_dir):
+def prepare_data(hdf5_data, subvol, lightcone_dir):
 
     #read ascii table from Bayet et al. (2011)
     datanu = np.genfromtxt('emlines_carbonmonoxide_restnu.data', delimiter=' ', skip_header=11)
@@ -52,8 +54,8 @@ def prepare_data(hdf5_data, subvols, lightcone_dir):
     dataPDR  = np.genfromtxt('emlines_carbonmonoxide_Bayet11.data', delimiter=' ', skip_header=10)
 
     CRs = dataPDR[:,5]/5E-17 #normalize cosmic rays rate by 5e-17 s^{-1}.
-    Xconv_Av3 = np.log10(dataPDR[:,6:16]/1e20) #normalize conversion factors by 10^20 cm^(-2) (K km/s)^(-1)
-    Xconv_Av8 = np.log10(dataPDR[:,16:26]/1e20) #normalize conversion factors by 10^20 cm^(-2) (K km/s)^(-1)
+    Xconv_Av3 = dataPDR[:,6:16]/1e20 #normalize conversion factors by 10^20 cm^(-2) (K km/s)^(-1)
+    Xconv_Av8 = dataPDR[:,16:26]/1e20 #normalize conversion factors by 10^20 cm^(-2) (K km/s)^(-1)
 
     #Convert all the relevant quantities to logarithm as the 3D interpolation is done in the logarithmic space.
     Xconv_Av3 = np.log10(Xconv_Av3)
@@ -66,15 +68,16 @@ def prepare_data(hdf5_data, subvols, lightcone_dir):
     nh   = dataPDR[:,3]
     ind = np.where(nh == 1e4)
     interpolator = interpolate.LinearNDInterpolator(zip(Zmod[ind], GUV[ind], CRs[ind]), np.squeeze(Xconv_Av3[ind]))
+    interpolator_nn = interpolate.NearestNDInterpolator(zip(Zmod[ind], GUV[ind], CRs[ind]), np.squeeze(Xconv_Av3[ind]))
 
     MinZ = min(Zmod) #!define minimum metallicity probed by the models.
     MaxZ = max(Zmod) #!define maximum metallicity probed by the models.
 
-    MinGUV = min(GUV)  #!define minimum GUV probed by the models.
-    MaxGUV = max(GUV)  #!define maximum GUV probed by the models.
+    MinGUV = np.min(GUV)  #!define minimum GUV probed by the models.
+    MaxGUV = np.max(GUV)  #!define maximum GUV probed by the models.
 
-    MinCRs = min(CRs) #!define minimum CRs probed by the models.
-    MaxCRs = max(CRs) #!define maximum CRs probed by the models.
+    MinCRs = np.min(CRs) #!define minimum CRs probed by the models.
+    MaxCRs = np.max(CRs) #!define maximum CRs probed by the models.
 
     #read galaxy information in lightcone
     (dec, ra, zobs, idgal, mmol_b, mmol_d, rd, rb, zd, zb, sfr_d, sfr_b, shi, dc) = hdf5_data
@@ -89,67 +92,77 @@ def prepare_data(hdf5_data, subvols, lightcone_dir):
     zcoldg_d = np.log10(zd/zsun)
     z_zero = np.where(zd <= 0)
     zcoldg_d[z_zero] = MinZ
-    ind = np.where(zcoldg_d < MinZ)
-    zcoldg_d[ind] = MinZ
-    ind = np.where(zcoldg_d > MaxZ)
-    zcoldg_d[ind] = MaxZ
+    zcoldg_d = np.clip(zcoldg_d, MinZ, MaxZ)
 
     zcoldg_b = np.log10(zb/zsun)
     ind = np.where(zb <= 0)
     zcoldg_b[ind] = MinZ
-    ind = np.where(zcoldg_b < MinZ)
-    zcoldg_b[ind] = MinZ
-    ind = np.where(zcoldg_b > MaxZ)
-    zcoldg_b[ind] = MaxZ
+    zcoldg_b = np.clip(zcoldg_b, MinZ, MaxZ)
    
     mHI = 2.356e5 / (1.0 + zobs) * pow(dc, 2.0) * shi * 1e+26 #HI mass in the disk in Msun
-    Mgas_disk =  mHI /XH + mmol_d
-    Mgas_bulge = mmol_b
+    Mgas_disk =  mHI /XH + mmol_d/h0
+    Mgas_bulge = mmol_b/h0
 
-    #calculation UV radiation field.
-    GUV_disk = (SFRdisk/Mgas_disk/(zd/zsun)) / Sigma0
-    GUV_disk = gammaSFR * np.log10(GUV_disk)    
-    guv_zero = np.where((Mgas_disk <= 0) | (SFRdisk <= 0))
-    GUV_disk[guv_zero] = MinGUV
-    ind = np.where(GUV_disk < MinGUV)
-    GUV_disk[ind] = MinGUV
-    ind = np.where(GUV_disk > MaxGUV)
-    GUV_disk[ind] = MaxGUV
+    # calculation UV radiation field.
+    def get_guv(sfr, mgas, z):
+        guv = (sfr / mgas / (z/zsun)) / Sigma0
+        guv = gammaSFR * np.log10(guv)    
+        is_zero = np.where((mgas <= 0) | (sfr <= 0))
+        guv[is_zero] = MinGUV
+        return np.clip(guv, MinGUV, MaxGUV)
 
-    GUV_bulge = (SFRburst/Mgas_bulge/(zb/zsun)) / Sigma0
-    GUV_bulge = gammaSFR * np.log10(GUV_bulge)
-    guv_zero  = np.where((Mgas_bulge <= 0) | (SFRburst <= 0))
-    GUV_bulge[guv_zero] = MinGUV
-    ind = np.where(GUV_bulge < MinGUV)
-    GUV_bulge[ind] = MinGUV
-    ind = np.where(GUV_bulge > MaxGUV)
-    GUV_bulge[ind] = MaxGUV
+    guv_disk = get_guv(SFRdisk, Mgas_disk, zd)
+    guv_bulge = get_guv(SFRburst, Mgas_bulge, zb)
 
-    CRRayFlux = np.full((len(GUV_disk)),1.0)
+    def get_co_emissions(mmol, zcoldg, guv):
 
-    XCOd = np.full((len(mmol_d), 10),0.0)  
-    XCOb = np.full((len(mmol_d), 10),0.0)  
-    LCOd = np.full((len(mmol_d), 10),0.0)  
-    LCOb = np.full((len(mmol_d), 10),0.0)  
+        shape = len(mmol), 10
+        CRRayFlux = np.full((len(guv)), 1.)
 
-    mcoldd = np.full((len(mmol_d), 10),0.0)  
-    LCOb = np.full((len(mmol_d), 10),0.0)  
+        ind = np.where(mmol > 0)
+        mcold = np.zeros(shape)
+        for i in range(0,10):
+            mcold[ind, i] = mmol[ind]
 
-    jline = range(10)
-    ind = np.where(mmol_d > 0)
+	# Interpolate linearly first
+        # If extrapolation is needed we use the nearest neighbour interpolator
+        xco = np.zeros(shape)
+        xco[ind, :] = 10.0 ** interpolator(zip(zcoldg[ind], guv[ind], CRRayFlux[ind]))
+        isnan = np.where(np.isnan(xco[:, 0]))
+        xco[isnan, :] = 10.0 ** interpolator_nn(zip(zcoldg[isnan], guv[isnan], CRRayFlux[isnan]))
+
+        lco = np.zeros(shape)
+        lco[ind, :] = mcold[ind] * XH / 313./ xco[ind]
+        for i in range(0, 10):
+            lco[ind, :] = lco[ind] / pow(i + 1.0, 2.0)
+        return lco
+
+    LCOb = get_co_emissions(mmol_b, zcoldg_b, guv_bulge)
+    LCOd = get_co_emissions(mmol_d, zcoldg_d, guv_disk)
+
+    #define CO luminosity in units of Jy km/s Mpc^2
+    LCOtot = LCOd + LCOb
+
+    #will calculate integrated line flux in Jy km/s
+    SCOtot = np.full((len(mmol_d), 10),0.0)
+    nuCO_obs = np.full((len(mmol_d), 10),0.0)
+
     for i in range(0,10):
-        mcoldd[ind,i] = mmol_d[ind]
-    XCOd[ind,:] = pow(10.0, interpolator(zip(zcoldg_d[ind], GUV_disk[ind], CRRayFlux[ind])))
-    LCOd[ind,:] = mcoldd[ind,:] * XH / 313./ XCOd[ind,:]
-    LCO10 = mmol_d[ind] * XH / 313./ XCOd[ind,0]
-    for i in range(0,10):
-         LCOd[ind,:] = LCOd[ind,:] / pow(i+1.0, 2.0)
-        
-    print LCOd[0:10,0], LCO10[0:10]
+        SCOtot[:,i] = LCOtot[:,i]/(4.0*PI)/pow((1.0+zobs) * dc/h0, 2.0)
+        nuCO_obs[:,i] = nuco[i]/(1.0+zobs)
+
+    file_to_write = os.path.join('CO_SLED_%02d.hdf5' % subvol)
+    hf = h5py.File(file_to_write, 'w')
+
+    hf.create_dataset('galaxies/id_galaxy_sam', data=idgal)
+    hf.create_dataset('galaxies/zobs', data=zobs)
+    hf.create_dataset('galaxies/ra', data=ra)
+    hf.create_dataset('galaxies/dec', data=dec)
+    hf.create_dataset('galaxies/dc', data=dc)
+    hf.create_dataset('galaxies/SCO', data=SCOtot)
+    hf.create_dataset('frequency_co_rest', data=nuco)
+    hf.close()
     
-    ind = np.where(mmol_b > 0)
-    LCOb[ind] = interpolator(zip(zcoldg_b[ind], GUV_bulge[ind], CRRayFlux[ind]))
-
 
 def main():
 
@@ -158,7 +171,7 @@ def main():
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/git/shark/data/'
 
-    subvols = (0,1) #range(64) 
+    subvols = range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
@@ -170,9 +183,9 @@ def main():
                            'rstar_bulge', 'zgas_disk', 'zgas_bulge', 'sfr_disk', 'sfr_burst', 
                            's_hi', 'dc')}
 
-    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
- 
-    prepare_data(hdf5_data, subvols, lightcone_dir)
+    for sv in subvols:
+       hdf5_data = common.read_lightcone(lightcone_dir, fields, [sv])
+       prepare_data(hdf5_data, sv, lightcone_dir)
 
 if __name__ == '__main__':
     main()
