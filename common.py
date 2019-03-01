@@ -291,7 +291,7 @@ def read_photometry_data(model_dir, snapshot, subvolumes, lightcone=False):
     return (seds, ids, nbands)
 
 def read_photometry_data_hdf5(model_dir, fields, subvolumes):
-    """Read the galaxies.hdf5 file for the given model/subvolume"""
+    """Read the Sting-SED*.hdf5 file for the given model/subvolume"""
 
     data = collections.OrderedDict()
     ids = None
@@ -299,6 +299,39 @@ def read_photometry_data_hdf5(model_dir, fields, subvolumes):
     for idx, subv in enumerate(subvolumes):
 
         fname = os.path.join(model_dir, 'split-photometry', 'Sting-SED_%02d.hdf5' % subv)
+        print('Reading galaxies data from %s' % fname)
+        with h5py.File(fname, 'r') as f:
+            # read ids
+            i =  ids
+            if i is None:
+                i = f['id_galaxy_sky'].value
+            else:
+                i = np.concatenate([i, f['id_galaxy_sky'].value])
+            ids = i
+
+            for gname, dsnames in fields.items():
+                group = f[gname]
+                for dsname in dsnames:
+
+                    full_name = '%s/%s' % (gname, dsname)
+                    l = data.get(full_name, None)
+                    if l is None:
+                        l = group[dsname].value
+                    else:
+                        l = np.concatenate([l, group[dsname].value], axis=1)
+                    data[full_name] = l
+
+    return ids, list(data.values())
+
+def read_CO_data_hdf5(model_dir, fields, subvolumes):
+    """Read the CO_SLED*.hdf5 file for the given model/subvolume"""
+
+    data = collections.OrderedDict()
+    ids = None
+
+    for idx, subv in enumerate(subvolumes):
+
+        fname = os.path.join(model_dir, 'split-CO', 'CO_SLED_%02d.hdf5' % subv)
         print('Reading galaxies data from %s' % fname)
         with h5py.File(fname, 'r') as f:
             # read ids
