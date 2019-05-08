@@ -227,10 +227,11 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
 
     common.savefig(outdir, fig, "number-counts-deep-lightcone-850.pdf")
 
-def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir):
+def prepare_data(phot_data, ids_sed, sed_nodust, hdf5_data, subvols, lightcone_dir):
 
     (dec, ra, zobs, idgal) = hdf5_data
    
+    #(SCO, id_cos) = co_hdf5_data
     #components of apparent magnitudes:
     #(len(my_data), 2, 2, 5, nbands)
     #0: disk instability bulge
@@ -239,19 +240,21 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir):
     #3: disk
     #4: total
     SEDs_dust   = phot_data[0]
+    SEDs_nodust = sed_nodust[0]
 
-    print len(SEDs_dust)
-    filte_to_write = lightcone_dir
-    fname = os.path.join(lightcone_dir, 'split', 'matched_population_driver19_test.dat')
+    #print len(SEDs_dust)
+    #filte_to_write = lightcone_dir
+    #fname = os.path.join(lightcone_dir, 'split', 'matched_population_driver19_test.dat')
 
     bands = (2, 4, 10)
     print idgal[0:10],ids_sed[0:10]
-    with open('/mnt/su3ctm/clagos/Lightcones/DriverNumberCounts/Shark/Shark-Deep-GAMA-Lightcone.txt', 'wb') as f:
-         f.write("#Galaxies from Shark (Lagos et al. 2018) in the GAMA-deep lightcone (r<32)")
-         f.write("#dec ra z u r K")
-         for a,b,c,d,e,g in zip(dec, ra, zobs, SEDs_dust[2], SEDs_dust[4], SEDs_dust[10]):
-             if(d > 0 and d < 32):
-                f.write("%5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n" % (a,b,c,d,e,g))
+    with open('/mnt/su3ctm/clagos/Lightcones/DriverNumberCounts/Shark/Shark-Deep-comp-Lightcone.txt', 'wb') as f:
+         f.write("#Galaxies from Shark (Lagos et al. 2018) in the GAMA-deep lightcone (r<32)\n")
+         #f.write("#area: 79.935deg^2 (-4<dec<4 and 175<ra<185)\n")
+         f.write("#dec ra z u r K u_nodust r_nodust\n")
+         for a,b,c,d,e,g,h,i in zip(dec, ra, zobs, SEDs_dust[2], SEDs_dust[4], SEDs_dust[10], SEDs_nodust[2], SEDs_nodust[4]):
+             if(e < 32):
+                f.write("%5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n" % (a,b,c,d,e,g,h,i))
 
 def main():
 
@@ -260,7 +263,8 @@ def main():
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/git/shark/data/'
 
-    subvols = range(64) 
+    subvols = (0, 2) 
+    #range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
@@ -270,13 +274,21 @@ def main():
     fields_sed = {'SED/ap_dust': ('total', 'disk')}
 
     ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
-  
+ 
+    fields_sed = {'SED/ap_nodust': ('total', 'disk')}
+
+    ids_sed_nodust, seds_nodust = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
+ 
     fields = {'galaxies': ('dec', 'ra', 'zobs',
                            'id_galaxy_sky')}
 
     hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
+
+    #fields_co = {'galaxies': ('SCO','id_galaxy_sky')}
+
+    #co_hdf5_data = common.read_co_hdf5(lightcone_dir, fields_co, subvols)
  
-    prepare_data(seds, ids_sed, hdf5_data, subvols, lightcone_dir)
+    prepare_data(seds, ids_sed, seds_nodust, hdf5_data, subvols, lightcone_dir)
 
 if __name__ == '__main__':
     main()

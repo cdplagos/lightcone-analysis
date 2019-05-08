@@ -36,7 +36,14 @@ MpcToKpc = 1e3
 c_light = 299792458.0 #m/s
 Sigma0=1e-10 #yr^{-1}*zsun
 Fx0=1e-2 #erg/s/cm^2
+Lsun = 3.839e-7 #in 1e40 erg/s
 
+thresh_thin_disk = 0.01
+thresh_super_edd = 1.0
+
+#the parameter below considers the difference between 
+#the peak flux and the maximum in a box-shaped emission line
+boost_box_profile = 1.5
 
 gammaSFR = 1.0
 alphaFx  = 1.0 
@@ -80,8 +87,43 @@ def prepare_data(hdf5_data, subvol, lightcone_dir):
     MaxCRs = np.max(CRs) #!define maximum CRs probed by the models.
 
     #read galaxy information in lightcone
-    (dec, ra, zobs, idgal, mmol_b, mmol_d, rd, rb, zd, zb, sfr_d, sfr_b, shi, dc) = hdf5_data
-   
+    (dec, ra, zobs, idgal, mmol_b, mmol_d, rd, rb, zd, zb, sfr_d, sfr_b, shi, dc,
+    mbh, mbh_acc_hh, mbh_acc_sb, jdisk, jbulge) = hdf5_data
+
+    #The calculation below is done to ultimately compute the amout of X-ray flux in the galaxy:
+
+    #Eddington luminosity calculation
+    Ledd = 1.26e6 * (mBH/h0/1e8) #in 1e40 ergs/s
+    #Eddington accretion rate from Eq 8 in Griffin et al. (208)
+    macc_edd = Ledd/(0.1*pow(c_light*1e2,2.0)) *1.577e+26 #in units of Msun/Gyr
+
+    mnorm = (mbh_acc_hh + mbh_acc_sb)/h0/macc_edd #accretion rate normalized by Eddington rate
+    
+    Lbol = np.zeros(len(Ledd))
+
+    #define bolometric luminosities using Eqs 1 in Amarantidis et al. (2019)
+  
+    Lthin_disk = 0.1*pow(c_light*1e2, 2.0) *(mbh_acc_hh[ind]+mbh_acc_sb[ind]) * 2e33/(3.154e7*1e9) /1e40 #in 1e40 ergs/s
+
+    #thin disks
+    ind = np.where((mnorm > thresh_thin_disk) & (mnorm < thresh_super_edd))
+    Lbol[ind] = Lthin_disk[ind]
+    #super-eddington
+    ind = np.where(mnorm > thresh_super_edd)
+    Lbol[ind] = thresh_super_edd *  (1.0 + np.log(mnorm[ind]/thresh_super_edd)) * Ledd[ind] #in 1e40 ergs/s
+    #ADAfs adopting alpa_ADAF=0.1 and beta = 0.81 and r_lso = 6 (spin =1)
+    ind = np.where((mnorm < thresh_thin_disk) & (mnorm > 0))
+    Lbol[ind] = 0.2 * Lthin_disk[ind] * (mnorm[ind]/1e-2) * 1.63 
+ 
+    #L-hard-xrays Eq 34 from Griffin et al. (2018)
+    Lrat = np.log10(Lbol/Lsun)  
+    Lx = pow(10.0, -1.54 - 0.24*Lrat - 0.012 * pow(Lrat, 2.0) + 0.0015 * pow(Lrat, 3.0)) * Lbol #in 1e40 erg/s
+
+    ind = np.where(mnorm <= 0)
+    Lx[ind] = 0
+
+    print Lbot[0:10], Lx[0:10]
+    #define relevant quantities we need for the calculation of CO
     SFRtot = (sfr_d + sfr_b)/1e9/h0
     SFRburst = sfr_b/1e9/h0
     SFRdisk = sfr_d/1e9/h0
@@ -103,6 +145,7 @@ def prepare_data(hdf5_data, subvol, lightcone_dir):
     Mgas_disk =  mHI /XH + mmol_d/h0
     Mgas_bulge = mmol_b/h0
 
+    #calculation of quantities that go directly into the CO computation
     # calculation UV radiation field.
     def get_guv(sfr, mgas, z):
         guv = (sfr / mgas / (z/zsun)) / Sigma0
@@ -114,10 +157,23 @@ def prepare_data(hdf5_data, subvol, lightcone_dir):
     guv_disk = get_guv(SFRdisk, Mgas_disk, zd)
     guv_bulge = get_guv(SFRburst, Mgas_bulge, zb)
 
-    def get_co_emissions(mmol, zcoldg, guv):
+    # calculation X-ray radiation field.
+    def get_xray(Lx,r):
+        
+        xray_field = np.zeros(len(Lx))
+        ind = np.where((Lx > 0) & (Lx < 1e20) & (r > 0))
+        xray_field[ind] = Lx / (4.0 * PI * pow(r,2.0)) / 9.5233e14 #in erg/s/cm^2
+        xray_field[ind] = xray_field[ind]/ FX0 #in solar units
+        return np.clip(xray_field, MinCRs, MaxCRs) 
+
+    xray_disk = get_xray(Lx, rd/h0)
+    xray_bulge = get_xray(Lx, rb/h0)
+
+    #calculate CO emission of galaxies given some inputs
+    def get_co_emissions(mmol, zcoldg, guv, fx):
 
         shape = len(mmol), 10
-        CRRayFlux = np.full((len(guv)), 1.)
+        CRRayFlux = fx #np.full((len(guv)), 1.)
 
         ind = np.where(mmol > 0)
         mcold = np.zeros(shape)
@@ -134,23 +190,39 @@ def prepare_data(hdf5_data, subvol, lightcone_dir):
         lco = np.zeros(shape)
         lco[ind, :] = mcold[ind] * XH / 313./ xco[ind]
         for i in range(0, 10):
-            lco[ind, :] = lco[ind] / pow(i + 1.0, 2.0)
+            lco[ind, i] = lco[ind, i] * pow(i + 1.0, 2.0)
         return lco
 
-    LCOb = get_co_emissions(mmol_b, zcoldg_b, guv_bulge)
-    LCOd = get_co_emissions(mmol_d, zcoldg_d, guv_disk)
+    #calculate CO luminosity coming from the disk and the bulge
+    LCOb = get_co_emissions(mmol_b/h0, zcoldg_b, guv_bulge)
+    LCOd = get_co_emissions(mmol_d/h0, zcoldg_d, guv_disk)
 
+    #get total CO luminosity
     #define CO luminosity in units of Jy km/s Mpc^2
     LCOtot = LCOd + LCOb
 
     #will calculate integrated line flux in Jy km/s
     SCOtot = np.full((len(mmol_d), 10),0.0)
     nuCO_obs = np.full((len(mmol_d), 10),0.0)
+    SCOpeak = np.full((len(mmol_d), 10),0.0)
+
+    vdisk = jdisk/rd
+    vbulge= jbulge/rb
+
+    dgal = 4.0*PI * pow((1.0+zobs) * dc/h0, 2.0)
 
     for i in range(0,10):
-        SCOtot[:,i] = LCOtot[:,i]/(4.0*PI)/pow((1.0+zobs) * dc/h0, 2.0)
+        SCOtot[:,i]   = LCOtot[:,i]/dgal[:]
         nuCO_obs[:,i] = nuco[i]/(1.0+zobs)
-
+        #define peak flux
+        ind = np.where((bulge > 0) & (vdisk > 0))
+        SCOpeak[:,i]  = max(LCOb[ind,i]/vbulge[ind], LCOd[ind,i]/vdisk[ind])/dgal[ind]
+        ind = np.where((bulge == 0) & (vdisk > 0))
+        SCOpeak[:,i]  = LCOd[ind,i]/vdisk[ind]/dgal[ind]
+        ind = np.where((bulge > 0) & (vdisk == 0))
+        SCOpeak[:,i]  = LCOb[ind,i]/vbulge[ind]/dgal[ind]
+       
+    #will write the hdf5 files with the CO SLEDs and relevant quantities
     file_to_write = os.path.join('CO_SLED_%02d.hdf5' % subvol)
     hf = h5py.File(file_to_write, 'w')
 
@@ -160,13 +232,15 @@ def prepare_data(hdf5_data, subvol, lightcone_dir):
     hf.create_dataset('galaxies/dec', data=dec)
     hf.create_dataset('galaxies/dc', data=dc)
     hf.create_dataset('galaxies/SCO', data=SCOtot)
+    hf.create_dataset('galaxies/SCO_peak', data=SCOpeak)
+    hf.create_dataset('galaxies/Lum_AGN_HardXray', data=Lx)
     hf.create_dataset('frequency_co_rest', data=nuco)
     hf.close()
     
 
 def main():
 
-    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
+    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-desIDsFixed/deep-optical/'
     outdir= '/home/clagos/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/git/shark/data/'
@@ -179,9 +253,9 @@ def main():
     areasub = totarea/64.0 * len(subvols)  #deg2
 
     fields = {'galaxies': ('dec', 'ra', 'zobs',
-                           'id_galaxy_sky', 'mmol_bulge', 'mmol_disk', 'rgas_disk', 
-                           'rstar_bulge', 'zgas_disk', 'zgas_bulge', 'sfr_disk', 'sfr_burst', 
-                           's_hi', 'dc')}
+                           'id_galaxy_sky', 'mmol_bulge', 'mmol_disk', 'rgas_disk_intrinsic', 
+                           'rstar_bulge_intrinsic', 'zgas_disk', 'zgas_bulge', 'sfr_disk', 'sfr_burst', 
+                           's_hi', 'dc', 'mbh','mbh_acc_hh','mbh_acc_sb','jdisk','jbulge')}
 
     for sv in subvols:
        hdf5_data = common.read_lightcone(lightcone_dir, fields, [sv])
