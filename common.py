@@ -257,7 +257,7 @@ def read_photometry_data(model_dir, snapshot, subvolumes, lightcone=False):
         if(lightcone == False):
            fname = os.path.join(model_dir, 'Photometry', str(snapshot), str(subv), 'Shark-SED.csv')
         else:
-           fname = os.path.join(model_dir, 'split-photometry', 'Sting-SED_%02d.csv' % subv)
+           fname = os.path.join(model_dir, 'split', 'Sting-SED_%02d.csv' % subv)
 
         print('Reading photometry data from %s' % fname)
         my_data = np.genfromtxt(fname, delimiter=',', skip_header=1)
@@ -298,7 +298,7 @@ def read_photometry_data_hdf5(model_dir, fields, subvolumes):
 
     for idx, subv in enumerate(subvolumes):
 
-        fname = os.path.join(model_dir, 'split-photometry', 'Sting-SED_%02d.hdf5' % subv)
+        fname = os.path.join(model_dir, 'split', 'Sting-SED_%02d.hdf5' % subv)
         print('Reading galaxies data from %s' % fname)
         with h5py.File(fname, 'r') as f:
             # read ids
