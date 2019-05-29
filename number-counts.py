@@ -19,9 +19,8 @@
 """HMF plots"""
 
 import numpy as np
-
 import common
-
+import os
 
 ##################################
 
@@ -47,7 +46,7 @@ dm2 = 0.15
 mbins2 = np.arange(mlow2,mupp2,dm2)
 xlf2   = mbins2 + dm2/2.0
 
-def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
+def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
 
     xlf_obs  = xlf
  
@@ -90,17 +89,39 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
         ax.errorbar(lm[obs_start[idx]:obs_end[idx]], yobs[obs_start[idx]:obs_end[idx]], yerr=[yobs[obs_start[idx]:obs_end[idx]]-ydn[obs_start[idx]:obs_end[idx]],yup[obs_start[idx]:obs_end[idx]]-yobs[obs_start[idx]:obs_end[idx]]], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='o')
 
         #Predicted LF
-        ind = np.where(ncounts[4,b,:] != 0)
-        y = ncounts[4,b,ind]
-        ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
+        if(idx == 8):
+            ind = np.where(ncounts[0,b,:] != 0)
+            y = ncounts[0,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'k', linewidth=3, label='Shark total')
+ 
+            ind = np.where(ncounts_nod[0,b,:] != 0)
+            y = ncounts_nod[0,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'k', linewidth=1, label='no dust')
+ 
+            ind = np.where(ncounts[1,b,:] != 0)
+            y = ncounts[1,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted', label='disks')
+            ind = np.where(ncounts[2,b,:] != 0)
+            y = ncounts[2,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges')
+        if(idx < 8):
+            ind = np.where(ncounts[0,b,:] != 0)
+            y = ncounts[0,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
+ 
+            ind = np.where(ncounts_nod[0,b,:] != 0)
+            y = ncounts_nod[0,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'k', linewidth=1)
+ 
+            ind = np.where(ncounts[1,b,:] != 0)
+            y = ncounts[1,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
+            ind = np.where(ncounts[2,b,:] != 0)
+            y = ncounts[2,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
 
-        ind = np.where(ncounts[3,b,:] != 0)
-        y = ncounts[3,b,ind]
-        ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
-        ind = np.where(ncounts[2,b,:] != 0)
-        y = ncounts[2,b,ind]
-        ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
-
+        if (idx == 8):
+            common.prepare_legend(ax, ['k','k','b','r'], loc='lower right')
     common.savefig(outdir, fig, "number-counts-deep-lightcone-optical.pdf")
 
     fig = plt.figure(figsize=(12,12))
@@ -130,16 +151,18 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
         ax.errorbar(lm[obs_start[idx]:obs_end[idx]], yobs[obs_start[idx]:obs_end[idx]], yerr=[yobs[obs_start[idx]:obs_end[idx]]-ydn[obs_start[idx]:obs_end[idx]],yup[obs_start[idx]:obs_end[idx]]-yobs[obs_start[idx]:obs_end[idx]]], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='o')
 
         #Predicted LF
-        ind = np.where(ncounts[4,b,:] != 0)
-        y = ncounts[4,b,ind]
+        ind = np.where(ncounts[0,b,:] != 0)
+        y = ncounts[0,b,ind]
         ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
 
-        ind = np.where(ncounts[3,b,:] != 0)
-        y = ncounts[3,b,ind]
+        ind = np.where(ncounts[1,b,:] != 0)
+        y = ncounts[1,b,ind]
         ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
         ind = np.where(ncounts[2,b,:] != 0)
         y = ncounts[2,b,ind]
         ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
+
+
 
     common.savefig(outdir, fig, "number-counts-deep-lightcone-IR.pdf")
 
@@ -175,12 +198,12 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
             ax.errorbar(lm[obs_start[idx]:obs_end[idx]], yobs[obs_start[idx]:obs_end[idx]], yerr=[yobs[obs_start[idx]:obs_end[idx]]-ydn[obs_start[idx]:obs_end[idx]],yup[obs_start[idx]:obs_end[idx]]-yobs[obs_start[idx]:obs_end[idx]]], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='o')
 
         #Predicted LF
-        ind = np.where(ncounts[4,b,:] != 0)
-        y = ncounts[4,b,ind]
+        ind = np.where(ncounts[0,b,:] != 0)
+        y = ncounts[0,b,ind]
         ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
 
-        ind = np.where(ncounts[3,b,:] != 0)
-        y = ncounts[3,b,ind]
+        ind = np.where(ncounts[1,b,:] != 0)
+        y = ncounts[1,b,ind]
         ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
         ind = np.where(ncounts[2,b,:] != 0)
         y = ncounts[2,b,ind]
@@ -188,48 +211,9 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850):
 
     common.savefig(outdir, fig, "number-counts-deep-lightcone-FIR.pdf")
 
-    xtit="$\\rm log_{10}(S_{\\rm JCMT\,850/mJy)$"
-    ytit="$\\rm log_{10}(N(>S)/deg^2)$"
+def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, ncounts_nodust):
 
-    xmin, xmax, ymin, ymax = -2, 2, -1 , 6
-    xleg = xmin + 0.2 * (xmax-xmin)
-    yleg = ymax - 0.1 * (ymax-ymin)
-
-    fig = plt.figure(figsize=(4,4))
-
-    ax = fig.add_subplot(111)
-    common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(2, 2, 1, 1))
-
-    file = obsdir+'/lf/numbercounts/ncts850_Karim13.data'
-    lmK13,pK13,dpupK13,dpdnK13 = np.loadtxt(file,usecols=[4,5,6,7],unpack=True)
-    yobs = np.log10(pK13)
-    ydn  = np.log10(pK13-dpdnK13)
-    yup  = np.log10(pK13+dpupK13)
-    ax.errorbar(np.log10(lmK13),yobs,yerr=[yobs-ydn,yup-yobs], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='s')
-
-    file = obsdir+'/lf/numbercounts/ncts850_knudsen08.data'
-    lmK08,pK08,dpupK08,dpdnK08 = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-    yobs = np.log10(pK08)
-    ydn  = np.log10(pK08-dpdnK08)
-    yup  = np.log10(pK08+dpupK08)
-    ax.errorbar(np.log10(lmK08),yobs,yerr=[yobs-ydn,yup-yobs], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='*')
-
-    #Predicted LF
-    ind = np.where(ncounts_cum_850[4,:] != 0)
-    y = ncounts_cum_850[4,ind]
-    ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
-
-    ind = np.where(ncounts_cum_850[3,:] != 0)
-    y = ncounts_cum_850[3,ind]
-    ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
-    ind = np.where(ncounts_cum_850[2,:] != 0)
-    y = ncounts_cum_850[2,ind]
-    ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
-
-    common.savefig(outdir, fig, "number-counts-deep-lightcone-850.pdf")
-
-
-def prepare_data(phot_data, ids_sed, ncounts, nbands, ncounts_cum_850):
+    (dec, ra, zobs, idgal) = hdf5_data
    
     #components of apparent magnitudes:
     #(len(my_data), 2, 2, 5, nbands)
@@ -238,63 +222,77 @@ def prepare_data(phot_data, ids_sed, ncounts, nbands, ncounts_cum_850):
     #2: total bulge
     #3: disk
     #4: total
-    SEDs_dust   = phot_data[:,1,1,:,:]
-    SEDs_nodust = phot_data[:,0,1,:,:]
+    SEDs_dust   = phot_data[0]
+    SEDs_dust_disk = phot_data[1]
+    SEDs_dust_bulge = phot_data[2]
+
+    SEDs_nodust   = phot_data_nod[0]
 
     #print SEDs_dust(0)
     for i in range(0,nbands):
-        for c in range(0,5):
-            #calculate LF with bands with dust
-            ind = np.where((SEDs_dust[:,c,i] > 0) & (SEDs_dust[:,c,i] < 40))
-            H, bins_edges = np.histogram(SEDs_dust[ind,c,i],bins=np.append(mbins,mupp))
-            ncounts[c,i,:] = ncounts[c,i,:] + H
+        #calculate number counts for total magnitude as well as no dust magnitudes
+        ind = np.where((SEDs_dust[i,:] > 0) & (SEDs_dust[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_dust[i,ind],bins=np.append(mbins,mupp))
+        ncounts[0,i,:] = ncounts[0,i,:] + H
 
-    #counts r-band
-    band = 4
-    ind = np.where((SEDs_dust[:,4,band] > 0) & (SEDs_dust[:,4,band] < 19.8))
-    rbandmags = SEDs_dust[ind,4,band]
-    print 'number of galaxies with r<19.8', len(rbandmags),rbandmags.shape()
+        ind = np.where((SEDs_nodust[i,:] > 0) & (SEDs_nodust[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_nodust[i,ind],bins=np.append(mbins,mupp))
+        ncounts_nodust[0,i,:] = ncounts_nodust[0,i,:] + H
 
-    for c in range(0,5):
-        SEDs_dust_850 = pow(10.0,SEDs_dust[:,c,26]/(-2.5))*3631*1e3 #in mJy
-        ind = np.where((SEDs_dust_850 > 1e-3) & (SEDs_dust_850 < 1e3))
-        H, bins_edges = np.histogram(np.log10(SEDs_dust_850[ind]),bins=np.append(mbins2,mupp2))
-        for i in range(1,len(H)):
-            ncounts_cum_850[c,i] = ncounts_cum_850[c,i] + sum(H[0:i])
-    
+        #contribution from disks and bulges
+        ind = np.where((SEDs_dust_disk[i,:] > 0) & (SEDs_dust_disk[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_dust_disk[i,ind],bins=np.append(mbins,mupp))
+        ncounts[1,i,:] = ncounts[1,i,:] + H
+
+        ind = np.where((SEDs_dust_bulge[i,:] > 0) & (SEDs_dust_bulge[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_dust_bulge[i,ind],bins=np.append(mbins,mupp))
+        ncounts[2,i,:] = ncounts[2,i,:] + H
 
 def main():
 
-    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
-    outdir= '/home/clagos/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
-    obsdir= '/home/clagos/git/shark/data/'
+    obsdir= '/home/clagos/shark/data/'
 
-    subvols = (62, 63)
+    subvols = range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
-    totarea = 107.8890011908422 #deg2
+
+    totarea = 10.0 #deg2 107.8890011908422 #deg2
+
     areasub = totarea/64.0 * len(subvols)  #deg2
 
-    seds, ids, nbands = common.read_photometry_data(lightcone_dir, 199, subvols, lightcone=True)
-   
-    ncounts = np.zeros(shape = (5, nbands, len(mbins)))
-    ncounts_cum_850 = np.zeros(shape = (5, len(mbins2)))
+    fields_sed = {'SED/ap_nodust': ('total', 'disk', 'bulge_t')}
 
-    prepare_data(seds, ids, ncounts, nbands, ncounts_cum_850)
+    ids_sed_ab, seds_nod = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
+
+    fields_sed = {'SED/ap_dust': ('total', 'disk', 'bulge_t')}
+
+    ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
+ 
+    fields = {'galaxies': ('dec', 'ra', 'zobs',
+                           'id_galaxy_sky')}
+
+    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
+
+    nbands = len(seds[0])
+    ncounts = np.zeros(shape = (3, nbands, len(mbins)))
+    ncounts_nodust = np.zeros(shape = (3, nbands, len(mbins)))
+
+    prepare_data(seds, seds_nod, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, ncounts_nodust)
 
     if(totarea > 0.):
         ncounts   = ncounts/areasub
-        ncounts_cum_850 = ncounts_cum_850/areasub
-
+        ncounts_nodust = ncounts_nodust/areasub
     # Take logs
     ind = np.where(ncounts > 1e-5)
     ncounts[ind] = np.log10(ncounts[ind])
-    ind = np.where(ncounts_cum_850 > 1e-5)
-    ncounts_cum_850[ind] = np.log10(ncounts_cum_850[ind])
+    ind = np.where(ncounts_nodust > 1e-5)
+    ncounts_nodust[ind] = np.log10(ncounts_nodust[ind])
 
-    plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_850)
+    plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nodust)
 
 if __name__ == '__main__':
     main()
