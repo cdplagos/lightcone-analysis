@@ -247,8 +247,8 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
 
 def main():
 
-    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
-    outdir= '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/split-CO/'
+    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-narrow/'
+    outdir= '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-narrow/split-CO/'
     obsdir= '/home/clagos/git/shark/data/'
 
     subvols = range(64) 
