@@ -191,6 +191,7 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
 
     (dec, ra, zobs, idgal) = hdf5_data
    
+    #(SCO, id_cos) = co_hdf5_data
     #components of apparent magnitudes:
     #(len(my_data), 2, 2, 5, nbands)
     #0: disk instability bulge
@@ -232,7 +233,8 @@ def main():
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/shark/data/'
 
-    subvols = range(64) 
+    subvols = (0, 2) 
+    #range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
