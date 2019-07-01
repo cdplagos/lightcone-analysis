@@ -44,9 +44,9 @@ polyfit_dm = [ 0.00544948, 0.00356938, -0.07893235,  0.05204814,  0.49353238]
 
 #choose dust model between mm14, rr14 and constdust
 m14 = False
-rr14 = False
+rr14 = True
 constdust = False
-rr14xcoc = True
+rr14xcoc = False
 
 #read EAGLE tables
 sdust_eaglet, taumed_eagle, taulow_eagle, tauhigh_eagle = common.load_observation('/home/clagos/shark/data/', 'Models/EAGLE/Tau5500-Trayford-EAGLE.dat', [0,1,2,3])
@@ -187,7 +187,8 @@ def prepare_data(hdf5_data, model_dir, subvol):
     bin_it = functools.partial(us.wmedians, xbins=xmf)
 
     # Unpack data
-    (typeg, rgasd, rgasb, mHId, mH2d, mgasd, mHIb, mH2b, mgasb, zd, zb, mdisk, mbulge, sfrd, sfrb, idgal, inclination) = hdf5_data
+    (typeg, rgasd, rgasb, mHId, mH2d, mgasd, mHIb, mH2b, mgasb, zd, zb, mdisk, mbulge, 
+    sfrd, sfrb, idgal_sky, idgal_sam, inclination, snap, subv) = hdf5_data
     XH = 0.72
     h0log = np.log10(float(h0))
 
@@ -213,7 +214,7 @@ def prepare_data(hdf5_data, model_dir, subvol):
     # will write the hdf5 files with the CO SLEDs and relevant quantities
     # will only write galaxies with mstar>0 as those are the ones being written in SFH.hdf5
     ind = np.where( (mdisk +  mbulge) > 0)
-    file_to_write = os.path.join(model_dir, 'split', 'extinction-eagle-rr14-steep_%02d.hdf5' % subvol)
+    file_to_write = os.path.join(model_dir, 'split', 'extinction-eagle-rr14_%02d.hdf5' % subvol)
     print ('Will write extinction to %s' % file_to_write)
     hf = h5py.File(file_to_write, 'w')
     
@@ -223,14 +224,17 @@ def prepare_data(hdf5_data, model_dir, subvol):
     hf.create_dataset('galaxies/tau_clump_bulge', data=tau_clump_bulge[ind])
     hf.create_dataset('galaxies/m_diff_disk', data=slope_dust_disk[ind])
     hf.create_dataset('galaxies/m_diff_bulge', data=slope_dust_bulge[ind])
-    hf.create_dataset('galaxies/id_galaxy', data=idgal[ind])
+    hf.create_dataset('galaxies/id_galaxy_sky', data=idgal_sky[ind])
+    hf.create_dataset('galaxies/id_galaxy_sam', data=idgal_sam[ind])
     hf.create_dataset('galaxies/inclination', data=inclination[ind])
+    hf.create_dataset('galaxies/snapshot', data=snap[ind])
+    hf.create_dataset('galaxies/subvolume', data=subv[ind])
     hf.close()
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/split/'
     obsdir= '/home/clagos/shark/data/'
 
     subvols = range(64)
@@ -238,7 +242,8 @@ def main():
     plt = common.load_matplotlib()
     fields = {'galaxies': ('type', 'rgas_disk_intrinsic', 'rgas_bulge_intrinsic', 'matom_disk', 'mmol_disk', 'mgas_disk',
                            'matom_bulge', 'mmol_bulge', 'msgas_bulge', 'zgas_disk', 
-                           'zgas_bulge', 'mstars_disk', 'mstars_bulge','sfr_disk','sfr_burst','id_galaxy_sky', 'inclination')}
+                           'zgas_bulge', 'mstars_disk', 'mstars_bulge','sfr_disk','sfr_burst','id_galaxy_sky', 'id_galaxy_sam','inclination',
+                           'snapshot','subvolume')}
 
     for subv in subvols:
         hdf5_data = common.read_lightcone(lightcone_dir, fields, [subv])
