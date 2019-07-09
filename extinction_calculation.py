@@ -218,12 +218,12 @@ def prepare_data(hdf5_data, model_dir, subvol):
     print ('Will write extinction to %s' % file_to_write)
     hf = h5py.File(file_to_write, 'w')
     
-    hf.create_dataset('galaxies/tau_diff_disk', data=tau_dust_disk[ind])
-    hf.create_dataset('galaxies/tau_diff_bulge', data=tau_dust_bulge[ind])
-    hf.create_dataset('galaxies/tau_clump_disk', data=tau_clump_disk[ind])
-    hf.create_dataset('galaxies/tau_clump_bulge', data=tau_clump_bulge[ind])
-    hf.create_dataset('galaxies/m_diff_disk', data=slope_dust_disk[ind])
-    hf.create_dataset('galaxies/m_diff_bulge', data=slope_dust_bulge[ind])
+    hf.create_dataset('galaxies/tau_screen_disk', data=tau_dust_disk[ind])
+    hf.create_dataset('galaxies/tau_screen_bulge', data=tau_dust_bulge[ind])
+    hf.create_dataset('galaxies/tau_birth_disk', data=tau_clump_disk[ind])
+    hf.create_dataset('galaxies/tau_birth_bulge', data=tau_clump_bulge[ind])
+    hf.create_dataset('galaxies/pow_screen_disk', data=slope_dust_disk[ind])
+    hf.create_dataset('galaxies/pow_screen_bulge', data=slope_dust_bulge[ind])
     hf.create_dataset('galaxies/id_galaxy_sky', data=idgal_sky[ind])
     hf.create_dataset('galaxies/id_galaxy_sam', data=idgal_sam[ind])
     hf.create_dataset('galaxies/inclination', data=inclination[ind])
@@ -233,8 +233,8 @@ def prepare_data(hdf5_data, model_dir, subvol):
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/split/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/split/'
     obsdir= '/home/clagos/shark/data/'
 
     subvols = range(64)

@@ -250,27 +250,29 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/gama/Plots/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/shark/data/'
 
-    subvols = range(64) 
+    Variable_Ext = True
+    sed_file = "Sting-SED"
+    subvols = (0,0) #range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
 
-    totarea = 10.0 #deg2 107.8890011908422 #deg2
+    totarea = 286 #10.0 #deg2 107.8890011908422 #deg2
 
     areasub = totarea/64.0 * len(subvols)  #deg2
 
     fields_sed = {'SED/ap_nodust': ('total', 'disk', 'bulge_t')}
 
-    ids_sed_ab, seds_nod = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
+    ids_sed_ab, seds_nod = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file)
 
     fields_sed = {'SED/ap_dust': ('total', 'disk', 'bulge_t')}
 
-    ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols)
+    ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file)
  
     fields = {'galaxies': ('dec', 'ra', 'zobs',
                            'id_galaxy_sky')}
@@ -291,6 +293,10 @@ def main():
     ncounts[ind] = np.log10(ncounts[ind])
     ind = np.where(ncounts_nodust > 1e-5)
     ncounts_nodust[ind] = np.log10(ncounts_nodust[ind])
+
+
+    if(Variable_Ext):
+       outdir = os.path.join(outdir, 'CF00')
 
     plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nodust)
 

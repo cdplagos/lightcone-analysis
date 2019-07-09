@@ -290,7 +290,7 @@ def read_photometry_data(model_dir, snapshot, subvolumes, lightcone=False):
 
     return (seds, ids, nbands)
 
-def read_photometry_data_hdf5(model_dir, fields, subvolumes):
+def read_photometry_data_hdf5(model_dir, fields, subvolumes, sed_file):
     """Read the Sting-SED*.hdf5 file for the given model/subvolume"""
 
     data = collections.OrderedDict()
@@ -298,7 +298,7 @@ def read_photometry_data_hdf5(model_dir, fields, subvolumes):
 
     for idx, subv in enumerate(subvolumes):
 
-        fname = os.path.join(model_dir, 'split', 'Sting-SED_%02d.hdf5' % subv)
+        fname = os.path.join(model_dir, 'split', sed_file+'_%02d.hdf5' % subv)
         print('Reading galaxies data from %s' % fname)
         with h5py.File(fname, 'r') as f:
             # read ids
