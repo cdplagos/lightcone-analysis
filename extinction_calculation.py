@@ -44,9 +44,9 @@ polyfit_dm = [ 0.00544948, 0.00356938, -0.07893235,  0.05204814,  0.49353238]
 
 #choose dust model between mm14, rr14 and constdust
 m14 = False
-rr14 = True
+rr14 = False
 constdust = False
-rr14xcoc = False
+rr14xcoc = True
 
 #read EAGLE tables
 sdust_eaglet, taumed_eagle, taulow_eagle, tauhigh_eagle = common.load_observation('/home/clagos/shark/data/', 'Models/EAGLE/Tau5500-Trayford-EAGLE.dat', [0,1,2,3])
@@ -225,7 +225,7 @@ def prepare_data(hdf5_data, model_dir, subvol):
     # will write the hdf5 files with the CO SLEDs and relevant quantities
     # will only write galaxies with mstar>0 as those are the ones being written in SFH.hdf5
     ind = np.where( (mdisk +  mbulge) > 0)
-    file_to_write = os.path.join(model_dir, 'split', 'extinction-eagle-rr14_%02d.hdf5' % subvol)
+    file_to_write = os.path.join(model_dir, 'split', 'extinction-eagle-rr14-steep_%02d.hdf5' % subvol)
     print ('Will write extinction to %s' % file_to_write)
     hf = h5py.File(file_to_write, 'w')
     
