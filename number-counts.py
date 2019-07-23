@@ -52,7 +52,7 @@ dz = 0.2
 zbins = np.arange(zlow,zupp,dz)
 xz   = zbins + dz/2.0
 
-dzobs = 0.5
+dzobs = 0.4
 zbinsobs = np.arange(zlow,zupp,dzobs)
 xzobs   = zbinsobs + dzobs/2.0
 
@@ -78,7 +78,7 @@ def plot_redshift(plt, outdir, obsdir, zdist):
     zdistw11[0,:] = zdistw11[0,:] + H
     zdistw11[1,:] = np.sqrt(zdistw11[0,:])
     areaobs = 0.5*0.5
-    yobs = zdistw11[0,:]/areaobs/dz
+    yobs = zdistw11[0,:]/areaobs/dzobs
     yup  = (zdistw11[0,:]+zdistw11[1,:])/areaobs/dzobs
     ydn  = (zdistw11[0,:]-zdistw11[1,:])/areaobs/dzobs
     ind = np.where(yobs > 0)
