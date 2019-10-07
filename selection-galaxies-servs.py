@@ -47,34 +47,37 @@ def prepare_data(phot_data, phot_dataab, ids_sed, hdf5_data, subvols, lightcone_
     re = (rsb*mstarb + mstard*rsd) / (mstarb+mstard)
     BT = mstarb / (mstarb+mstard)
 
-    bands = (2, 3, 4, 5, 6)
-    with open('/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/Shark-WAVESdeep23-Lightcone-1.txt', 'wb') as fil:
-         fil.write("#Galaxies from Shark (Lagos et al. 2018) in the GAMA-deep lightcone\n")
-         fil.write("#RA=339...351, DEC=-35...-30 area 50.58743129433447 deg2\n")
+    bands = (2, 3, 4, 5, 6, 10, 12, 13)
+    print SEDs_dust[13]
+    with open('/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Shark-deep-opticalLightcone-SERVS.txt', 'wb') as fil:
+         fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
+         fil.write("#SED modelling as described in Lagos et al. (2019).\n")
+         fil.write("#area 107.889 deg2\n")
+         fil.write("#S_3.6microns > 0.575 micro Jy\n")
          fil.write("#units\n")
          fil.write("#mstar[Msun]\n")
          fil.write("#sfr[Msun/yr]\n")
          fil.write("#re[arcsec]\n")
          fil.write("#magnitudes AB\n")
          fil.write("#\n")
-         fil.write("#dec ra redshift log10(mstar) log10(sfr) re B/T app_u app_g app_r app_i app_z abs_u abs_g abd_r abs_i abs_z \n")
-         for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q in zip(dec, ra, zobs, mstartot, sfrtot, re, BT, SEDs_dust[2], SEDs_dust[3], SEDs_dust[4], SEDs_dust[5], SEDs_dust[6], SEDs_dustab[2], SEDs_dustab[3], SEDs_dustab[4], SEDs_dustab[5], SEDs_dustab[6]):
-             if(h > 0 and l <= 22.0):
-                fil.write("%5.10f %5.10f %5.5f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n" % (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q))
+         fil.write("#dec ra redshift log10(mstar) log10(sfr) re B/T app_u app_g app_r app_i app_z app_VISTAK app_Spitzer1 app_Spitzer2 abs_u abs_g abd_r abs_i abs_z abs_VISTAK abs_Spitzer1 abs_Spitzer2\n")
+         for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w in zip(dec, ra, zobs, mstartot, sfrtot, re, BT, SEDs_dust[2], SEDs_dust[3], SEDs_dust[4], SEDs_dust[5], SEDs_dust[6], SEDs_dust[10], SEDs_dust[12], SEDs_dust[13], SEDs_dustab[2], SEDs_dustab[3], SEDs_dustab[4], SEDs_dustab[5], SEDs_dustab[6], SEDs_dustab[10], SEDs_dustab[12], SEDs_dustab[13]):
+             if(h > 0 and n <= 24.5):
+                fil.write("%5.10f %5.10f %5.7f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f \n" % (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w))
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/Plots/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
     obsdir= '/home/clagos/shark/data/'
 
     subvols = range(64) #(0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #(9,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) #0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35) #range(64)
-    sed_file = "Sting-SED-eagle-rr14"
+    sed_file = "Sting-SED-eagle-rr14-steep"
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
-    totarea = 50.58743129433447 #107.8890011908422 #deg2
+    totarea = 107.8890011908422 #deg2
     areasub = totarea/64.0 * len(subvols)  #deg2
 
     #fields_sed = {'SED/ab_dust': ('total', 'disk', 'bulge_t')}

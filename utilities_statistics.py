@@ -76,6 +76,65 @@ def wmedians(x=None, y=None, xbins=None, low_numbers=False):
 
     return result
 
+def wmedians_cum(x=None, y=None, xbins=None, low_numbers=False):
+
+    #return the median and error on the median
+    nbins = len(xbins)
+    #define size of bins, assuming bins are all equally spaced.
+    result = np.zeros(shape = (3, nbins))
+
+    for i in range (0,nbins):
+        ind  = np.where(x >= xbins[i])
+        if(len(x[ind]) > 9):
+            obj_bin = len(x[ind])
+            ybin    = y[ind]
+            result[0, i] = np.median(ybin)
+            #sort array on 1/y because we want it to sort from the smallest to the largest item, and the default of argsort is to order from the largest to the smallest.
+            IDs = np.argsort(ybin,kind='quicksort')
+            ID16th = int(np.floor(obj_bin*0.16))+1   #take the lower edge.
+            ID84th = int(np.floor(obj_bin*0.84))-1   #take the upper edge.
+            result[1, i] = np.abs(result[0, i] - ybin[IDs[ID16th]])
+            result[2, i] = np.abs(ybin[IDs[ID84th]] - result[0, i])
+        elif(low_numbers and len(x[ind]) > 0):
+            ybin    = y[ind]
+            result[0, i] = np.median(ybin)
+            result[1, i] = np.abs(result[0, i] - np.min(y[ind]))
+
+    return result
+
+def medians_cum_err(x=None, y=None, xbins=None, low_numbers=False):
+
+    #return the median and error on the median
+    nbins = len(xbins)
+    #define size of bins, assuming bins are all equally spaced.
+    result = np.zeros(shape = (2, nbins))
+
+    for i in range (0,nbins):
+        ind  = np.where(x >= xbins[i])
+        if(len(x[ind]) > 9):
+            obj_bin = len(x[ind])
+            ybin    = y[ind]
+            result[0, i] = np.median(ybin)
+            #sort array on 1/y because we want it to sort from the smallest to the largest item, and the default of argsort is to order from the largest to the smallest.
+            result[1, i] = jackknife(ybin)
+        elif(low_numbers and len(x[ind]) > 0):
+            ybin    = y[ind]
+            result[0, i] = np.median(ybin)
+            result[1, i] = np.abs(result[0, i] - np.min(y[ind]))
+
+    return result
+
+
+def jackknife(x, iterations=10):
+
+    medians = np.zeros(shape = iterations)
+    len_subsample = len(x) / iterations
+    for i in range(iterations):
+         subsample = np.random.choice(x, size=len_subsample)
+         medians[i] = np.median(subsample)
+
+    return np.std(medians)
+
 def stacking(x=None, y=None, xbins=None, low_numbers=False):
 
     nbins = len(xbins)

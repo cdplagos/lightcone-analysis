@@ -47,21 +47,21 @@ mbins2 = np.arange(mlow2,mupp2,dm2)
 xlf2   = mbins2 + dm2/2.0
 
 zlow = 0
-zupp = 5
+zupp = 6
 dz = 0.2
 zbins = np.arange(zlow,zupp,dz)
 xz   = zbins + dz/2.0
 
-dzobs = 0.4
+dzobs = 0.5
 zbinsobs = np.arange(zlow,zupp,dzobs)
 xzobs   = zbinsobs + dzobs/2.0
 
 
 def plot_redshift(plt, outdir, obsdir, zdist):
     xtit="$\\rm redshift$"
-    ytit="$\\rm N(>S)/dz/area [deg^{-2}]$"
+    ytit="$\\rm N(S_{\\rm 850 \\mu m}>5 mJy)/dz/area [deg^{-2}]$"
 
-    xmin, xmax, ymin, ymax = 0, 5, 0, 200
+    xmin, xmax, ymin, ymax = 0, 6, 0, 200
     xleg = xmin + 0.2 * (xmax-xmin)
     yleg = ymax - 0.1 * (ymax-ymin)
 
@@ -70,7 +70,7 @@ def plot_redshift(plt, outdir, obsdir, zdist):
     common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(1, 1, 20, 20))
     plt.subplots_adjust(left=0.2, bottom=0.15)
     file = obsdir+'/lf/numbercounts/SMG_z_LESS_wardlow2011_table.data'
-    sw11,zw11 = np.loadtxt(file,usecols=[1,4],unpack=True)
+    sw11,sw11err,zw11 = np.loadtxt(file,usecols=[1,2,4],unpack=True)
     ind = np.where(sw11 >= 5)
     zdistw11 = np.zeros(shape = (2,len(zbinsobs)))
 
@@ -84,6 +84,9 @@ def plot_redshift(plt, outdir, obsdir, zdist):
     ind = np.where(yobs > 0)
     ax.errorbar(xzobs[ind],yobs[ind],yerr=[yobs[ind]-ydn[ind],yup[ind]-yobs[ind]], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='D',label='Wardlow+11')
     ax.plot(xz,zdist/dz,'k')
+    #for x,y in zip(xz,zdist/dz):
+    #    print x,y
+
     common.prepare_legend(ax, ['grey'], loc="upper left")
 
     common.savefig(outdir, fig, "zdistribution-850microns-5mJy.pdf")
@@ -279,16 +282,31 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
     subplots = (331, 332, 333, 334, 335, 336, 337, 338, 339)#, 5510, 5511, 5512, 5513, 5514, 5515, 5516, 5517, 5518, 5519, 5520, 5521, 5522, 5523, 5524, 5525)
     idx = (0, 1, 2, 3, 4, 5, 6, 7, 8)#, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
 
-    labels= ('GALEX NUV', 'SDSS r', 'VISTA Y', 'IRAC 3.6', 'IRAC 8', 'P100', 'P160', 'S250', 'JCTM850')
-    bands = (1, 4, 7, 12, 16, 20, 21, 22, 26)
-    obs_start = (32, 272, 656, 1031, 1106, 1273, 1336, 1416)
-    obs_end   = (98, 387, 756, 1061, 1129, 1336, 1416, 1446)
+    labels= ('GALEX NUV', 'SDSS r', 'VISTA Y', 'IRAC 3.6', 'IRAC 8', 'P70', 'P100', 'S500', 'JCTM850')
+    bands = (1, 4, 7, 12, 16, 19, 20, 25, 26)
+    obs_start = (32, 272, 656, 1031, 1106, 1232, 1273, 1472)
+    obs_end   = (98, 387, 756, 1061, 1129, 1373, 1336, 1496)
 
     file = obsdir+'/lf/numbercounts/Driver16_numbercounts.data'
     lm,p,dp = np.loadtxt(file,usecols=[2,3,4],unpack=True)
     yobs = np.log10(p)
     ydn  = np.log10(p-dp)
     yup  = np.log10(p+dp)
+
+    #for x,y1,y2,y3,y4,y5,y6,y7,y8,y9 in zip(xlf_obs,ncounts[0,bands[0],:],ncounts[0,bands[1],:],ncounts[0,bands[2],:],ncounts[0,bands[3],:],ncounts[0,bands[4],:],ncounts[0,bands[5],:],ncounts[0,bands[6],:],ncounts[0,bands[7],:],ncounts[0,bands[8],:]):
+    #    print x,y1,y2,y3,y4,y5,y6,y7,y8,y9
+
+    #for x,y1,y2,y3,y4,y5,y6,y7,y8,y9 in zip(xlf_obs,ncounts_nod[0,bands[0],:],ncounts_nod[0,bands[1],:],ncounts_nod[0,bands[2],:],ncounts_nod[0,bands[3],:],ncounts_nod[0,bands[4],:],ncounts_nod[0,bands[5],:],ncounts_nod[0,bands[6],:],ncounts_nod[0,bands[7],:],ncounts_nod[0,bands[8],:]):
+    #    print x,y1,y2,y3,y4,y5,y6,y7,y8,y9
+
+    #for x,y1,y2,y3,y4,y5,y6,y7,y8,y9 in zip(xlf_obs,ncounts[1,bands[0],:],ncounts[1,bands[1],:],ncounts[1,bands[2],:],ncounts[1,bands[3],:],ncounts[1,bands[4],:],ncounts[1,bands[5],:],ncounts[1,bands[6],:],ncounts[1,bands[7],:],ncounts[1,bands[8],:]):
+    #    print x,y1,y2,y3,y4,y5,y6,y7,y8,y9
+
+    #for x,y1,y2,y3,y4,y5,y6,y7,y8,y9 in zip(xlf_obs,ncounts[3,bands[0],:],ncounts[3,bands[1],:],ncounts[3,bands[2],:],ncounts[3,bands[3],:],ncounts[3,bands[4],:],ncounts[3,bands[5],:],ncounts[3,bands[6],:],ncounts[3,bands[7],:],ncounts[3,bands[8],:]):
+    #    print x,y1,y2,y3,y4,y5,y6,y7,y8,y9
+
+    #for x,y1,y2,y3,y4,y5,y6,y7,y8,y9 in zip(xlf_obs,ncounts[4,bands[0],:],ncounts[4,bands[1],:],ncounts[4,bands[2],:],ncounts[4,bands[3],:],ncounts[4,bands[4],:],ncounts[4,bands[5],:],ncounts[4,bands[6],:],ncounts[4,bands[7],:],ncounts[4,bands[8],:]):
+    #    print x,y1,y2,y3,y4,y5,y6,y7,y8,y9
 
     for subplot, idx, b in zip(subplots, idx, bands):
 
@@ -329,7 +347,6 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             ind = np.where(ncounts[0,b,:] != 0)
             y = ncounts[0,b,ind]
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=3, label='Shark total')
- 
             ind = np.where(ncounts_nod[0,b,:] != 0)
             y = ncounts_nod[0,b,ind]
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=1, label='no dust')
@@ -337,23 +354,29 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             ind = np.where(ncounts[1,b,:] != 0)
             y = ncounts[1,b,ind]
             ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted', label='disks')
-            ind = np.where(ncounts[2,b,:] != 0)
-            y = ncounts[2,b,ind]
-            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges')
+            ind = np.where(ncounts[4,b,:] != 0)
+            y = ncounts[4,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges mergers')
+            ind = np.where(ncounts[3,b,:] != 0)
+            y = ncounts[3,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'LightSalmon', linewidth=2, linestyle='dashdot', label='bulges diskins')
         else:
             ind = np.where(ncounts[0,b,:] != 0)
             y = ncounts[0,b,ind]
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=3, label='Shark total')
- 
+
             ind = np.where(ncounts[1,b,:] != 0)
             y = ncounts[1,b,ind]
             ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted', label='disks')
-            ind = np.where(ncounts[2,b,:] != 0)
-            y = ncounts[2,b,ind]
-            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges')
+            ind = np.where(ncounts[4,b,:] != 0)
+            y = ncounts[4,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges mergers')
+            ind = np.where(ncounts[3,b,:] != 0)
+            y = ncounts[3,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'LightSalmon', linewidth=2, linestyle='dashdot', label='bulges diskins')
 
-        if (idx == 8):
-            common.prepare_legend(ax, ['k','b','r'], loc='lower right')
+        if (idx == 5):
+            common.prepare_legend(ax, ['k','b','r','LightSalmon'], loc='lower right')
     common.savefig(outdir, fig, "number-counts-deep-lightcone-selected.pdf")
 
 def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, ncounts_nodust, zdist):
@@ -370,6 +393,8 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
     SEDs_dust   = phot_data[0]
     SEDs_dust_disk = phot_data[1]
     SEDs_dust_bulge = phot_data[2]
+    SEDs_dust_bulge_d = phot_data[3]
+    SEDs_dust_bulge_m = phot_data[4]
 
     SEDs_nodust   = phot_data_nod[0]
 
@@ -393,6 +418,14 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
         H, bins_edges = np.histogram(SEDs_dust_bulge[i,ind],bins=np.append(mbins,mupp))
         ncounts[2,i,:] = ncounts[2,i,:] + H
 
+        ind = np.where((SEDs_dust_bulge_d[i,:] > 0) & (SEDs_dust_bulge_d[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_dust_bulge_d[i,ind],bins=np.append(mbins,mupp))
+        ncounts[3,i,:] = ncounts[3,i,:] + H
+
+        ind = np.where((SEDs_dust_bulge_m[i,:] > 0) & (SEDs_dust_bulge_m[i,:] < 40))
+        H, bins_edges = np.histogram(SEDs_dust_bulge_m[i,ind],bins=np.append(mbins,mupp))
+        ncounts[4,i,:] = ncounts[4,i,:] + H
+
         #redshift distribution for 850microns sources brighter than 5mJy
         if(i == 26):
            ind = np.where((SEDs_dust[i,:] > -10) & (SEDs_dust[i,:] < 14.6525))
@@ -401,19 +434,20 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23//Plots/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/shark/data/'
 
     Variable_Ext = True
-    sed_file = "Sting-SED-eagle-rr14-steep"
-    subvols = (0,1,2,3,4,5,6,7,8,9,10) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
+    sed_file = "Sting-SED-eagle-rr14"
+    subvols = (0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
+    #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
 
-    totarea =  107.8890011908422 #286 #10.0 #deg2 107.8890011908422 #deg2
+    totarea =  50.58743129433447 #107.8890011908422 #286 #10.0 #deg2 107.8890011908422 #deg2
 
     areasub = totarea/64.0 * len(subvols)  #deg2
 
@@ -421,7 +455,7 @@ def main():
 
     ids_sed_ab, seds_nod = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file)
 
-    fields_sed = {'SED/ap_dust': ('total', 'disk', 'bulge_t')}
+    fields_sed = {'SED/ap_dust': ('total', 'disk', 'bulge_t',  'bulge_d', 'bulge_m')}
 
     ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file)
  
@@ -431,7 +465,7 @@ def main():
     hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
 
     nbands = len(seds[0])
-    ncounts = np.zeros(shape = (3, nbands, len(mbins)))
+    ncounts = np.zeros(shape = (5, nbands, len(mbins)))
     ncounts_nodust = np.zeros(shape = (3, nbands, len(mbins)))
     zdist = np.zeros(shape = (len(zbins)))
 
@@ -450,7 +484,7 @@ def main():
 
 
     if(Variable_Ext):
-       outdir = os.path.join(outdir, 'eagle-rr14-steep')
+       outdir = os.path.join(outdir, 'eagle-rr14')
 
     plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nodust)
     plot_redshift(plt, outdir, obsdir, zdist)
