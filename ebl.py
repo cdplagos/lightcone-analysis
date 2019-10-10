@@ -66,24 +66,24 @@ def plot_ebl(plt, outdir, obsdir, ebl, ebl_nodust):
     xlf_obs  = xlf
  
     xtit="$\\rm log_{10}(\\lambda/\\mu m)$"
-    ytit="$\\rm log_{10}(N/{\\rm 0.5 mag}^{-1}/A\, deg^2)$"
+    ytit="$\\rm log_{10}(\\nu I_{\\nu}/ nW m^{-2} sr^{-1})$"
 
     xmin, xmax, ymin, ymax = -1, 3.5, -2, 2
     xleg = xmin + 0.2 * (xmax-xmin)
     yleg = ymax - 0.1 * (ymax-ymin)
 
-    fig = plt.figure(figsize=(5,4))
+    fig = plt.figure(figsize=(7,5))
 
     ax = fig.add_subplot(111)
     common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(1, 1, 20, 20))
 
 
-    ax.plot(lambda_bands-4.0, np.log10(ebl[0]), 'kD', label='Total')
-    ax.plot(lambda_bands-4.0, np.log10(ebl_nodust[0]), 'kd', label='Intrinsic')
-    ax.plot(lambda_bands-4.0, np.log10(ebl[1]), 'bs', label='Disks')
-    ax.plot(lambda_bands-4.0, np.log10(ebl[2]), 'ro', label='Bulges')
+    ax.plot(lambda_bands-4.0, np.log10(ebl[0]), 'kD', alpha=0.5, label='Total')
+    ax.plot(lambda_bands-4.0, np.log10(ebl_nodust[0]), 'kd', alpha=0.5, label='Intrinsic')
+    ax.plot(lambda_bands-4.0, np.log10(ebl[1]), 'bs', alpha=0.5, label='Disks')
+    ax.plot(lambda_bands-4.0, np.log10(ebl[2]), 'ro', alpha=0.5, label='Bulges')
 
-    common.prepare_legend(ax, loc="upper left")
+    common.prepare_legend(ax, ['k','k','b','r'], loc="lower left")
     common.savefig(outdir, fig, "ebl-deep-lightcone-optical.pdf")
 
 def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcone_dir, ebl, nbands, ebl_nodust):
@@ -142,7 +142,7 @@ def main():
 
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14-testmmbands"
-    subvols = range(20) #(0,1) #,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
+    subvols = (0,1) #,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
