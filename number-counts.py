@@ -434,20 +434,20 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23//Plots/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
     obsdir= '/home/clagos/shark/data/'
 
     Variable_Ext = True
-    sed_file = "Sting-SED-eagle-rr14"
-    subvols = (0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
+    sed_file = "Sting-SED-eagle-rr14_tb1p5"
+    subvols = (0,1,2,3,4,5,6,7,8,9,10) #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
 
-    totarea =  50.58743129433447 #107.8890011908422 #286 #10.0 #deg2 107.8890011908422 #deg2
+    totarea =  107.8890011908422 #286 #10.0 #deg2 107.8890011908422 #deg2
 
     areasub = totarea/64.0 * len(subvols)  #deg2
 
@@ -484,7 +484,7 @@ def main():
 
 
     if(Variable_Ext):
-       outdir = os.path.join(outdir, 'eagle-rr14')
+       outdir = os.path.join(outdir, 'eagle-rr14-alphaSF1p5')
 
     plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nodust)
     plot_redshift(plt, outdir, obsdir, zdist)

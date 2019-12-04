@@ -108,7 +108,8 @@ def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone
     bandsg = 3
     bandsz = 6
     bandsk = 10
-    
+   
+    print SCO.shape 
     colbzk = (SEDs_dust[bandsz,:]-SEDs_dust[bandsk,:]) - (SEDs_dust[bandsg,:]-SEDs_dust[bandsz,:])
     bzkselec = np.where((colbzk > -0.2) & (SEDs_dust[bandsk,:] < 20) & (SEDs_dust[bandsk,:] > 10))
     so_bzk = SCO[bzkselec]

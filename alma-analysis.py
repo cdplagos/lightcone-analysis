@@ -155,9 +155,9 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
 
     subplots = (231, 232, 233, 234, 235, 236)
     idxs = (0, 1, 2, 3, 4)#, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
-    bands = (1, 2, 3, 4, 5)#, 9, 10, 11, 12, 13, 14, 15, 16,17, 18, 19, 20, 21, 22, 23, 24)
+    bands = (3, 4, 5, 6, 8)#1, 2, 3, 4, 5)#, 9, 10, 11, 12, 13, 14, 15, 16,17, 18, 19, 20, 21, 22, 23, 24)
     labels= ('Band-9','Band-8', 'Band-7', 'Band-6', 'Band-4')
-
+    #(24, 25, 26, 27, 28, 29, 30, 31, 32)
     for subplot, idx, b in zip(subplots, idxs, bands):
 
         ax = fig.add_subplot(subplot)
@@ -194,8 +194,10 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
             ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(pu17+dpu17up)-np.log10(pu17)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='d',label='Umehata+2017')
             file = obsdir+'/lf/numbercounts/ncts1p2mm_Htsukade18.data'
             lmf16, pf16, dpf16dn, dpf16up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmf16),np.log10(pf16),yerr=[np.log10(pf16)-np.log10(pf16-dpf16dn), np.log10(pf16+dpf16up)-np.log10(pf16)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='d',label='Hatsukade+2018')
-
+            ax.errorbar(np.log10(lmf16),np.log10(pf16),yerr=[np.log10(pf16)-np.log10(pf16-dpf16dn), np.log10(pf16+dpf16up)-np.log10(pf16)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='^',label='Hatsukade+2018')
+            file = obsdir+'/lf/numbercounts/ncts1p2mm_Gonzalez-Lopez19.data'
+            lmf19, pf19, dpf19 = np.loadtxt(file,usecols=[0,1,2],unpack=True)
+            ax.errorbar(lmf19,np.log10(pf19),yerr=[np.log10(pf19)-np.log10(pf19-dpf19), np.log10(pf19+dpf19)-np.log10(pf19)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='*',label='Gonzalez-Lopez+2020')
 
         #Predicted LF
         if(idx == 4):
@@ -223,7 +225,7 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
         if (idx == 4):
             common.prepare_legend(ax, ['k','b','r','grey','grey','grey'], bbox_to_anchor=[1.1,0.1])
         if (idx == 1 or idx == 2 or idx == 3):
-            common.prepare_legend(ax, ['grey','grey','grey'], loc='lower left')
+            common.prepare_legend(ax, ['grey','grey','grey','grey'], loc='lower left')
 
     common.savefig(outdir, fig, "number-counts-deep-FIR-ALMA.pdf")
 
@@ -327,9 +329,9 @@ def main():
                 ncounts_cum[0,b,j] = np.sum(ncounts[0,b,j:len(mbins)])
                 ncounts_cum[1,b,j] = np.sum(ncounts[1,b,j:len(mbins)])
                 ncounts_cum[2,b,j] = np.sum(ncounts[2,b,j:len(mbins)])
-            print 'band', b
-            for m,a,b,c in zip(xlf,ncounts_cum[0,b,:],ncounts_cum[1,b,:],ncounts_cum[2,b,:]):
-                print m-dm*0.5,a/areasub,b/areasub,c/areasub
+            #print 'band', b
+            #for m,a,b,c in zip(xlf,ncounts_cum[0,b,:],ncounts_cum[1,b,:],ncounts_cum[2,b,:]):
+            #    print m-dm*0.5,a/areasub,b/areasub,c/areasub
 
         ncounts   = ncounts/areasub/dm
         ncounts_cum = ncounts_cum/areasub
@@ -344,8 +346,8 @@ def main():
     if(Variable_Ext):
        outdir = os.path.join(outdir, 'eagle-rr14')
 
-    #plot_numbercounts(plt, outdir, obsdir, ncounts_cum)
-    #plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts)
+    plot_numbercounts(plt, outdir, obsdir, ncounts_cum)
+    plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts)
 
 if __name__ == '__main__':
     main()
