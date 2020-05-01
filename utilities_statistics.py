@@ -130,7 +130,7 @@ def jackknife(x, iterations=10):
     medians = np.zeros(shape = iterations)
     len_subsample = len(x) / iterations
     for i in range(iterations):
-         subsample = np.random.choice(x, size=len_subsample)
+         subsample = np.random.choice(x, size=int(np.floor(len_subsample)))
          medians[i] = np.median(subsample)
 
     return np.std(medians)
@@ -251,6 +251,20 @@ def density_contour(ax, xdata, ydata, nbins_x, nbins_y):
     return ax.contourf(X, Y, Z, levels=levels, origin="lower", alpha=0.75,
                       norm=col.Normalize(vmin=0, vmax=0.01), **extra_args)
 
+def twodim_plot(xdata, ydata, prop, xbins, ybins):
+
+    dx = abs(xbins[0] - xbins[1]) / 2.0
+    dy = abs(ybins[0] - ybins[1]) / 2.0
+
+    cout = np.zeros(shape = (len(xbins), len(ybins)))
+    for xi,x in enumerate(xbins):
+        for yi,y in enumerate(ybins):
+            ind = np.where((xdata > x - dx) & (xdata <= x + dx) & (ydata > y - dy) & (ydata <= y + dy))
+            if len(prop[ind]) >= 5:
+               cout[xi,yi] = np.median(prop[ind])
+
+
+    return cout
 
 
 def look_back_time(z, h=0.6751, omegam=0.3121, omegal=0.6879):
@@ -315,3 +329,43 @@ def redshift(lbt, h=0.6751, omegam=0.3121, omegal=0.6879):
 		z[i] = round(z[i], 2)
 
 	return z
+
+def compute_cosmic_variance_redshifts(flux, z, flux_threshs_log, n_rand):
+
+    len_subsample = len(flux) / n_rand
+    std_redshifts= np.zeros(shape = (len(flux_threshs_log)))
+    for ft in range(0,len(flux_threshs_log)):
+        bright = np.where(flux > flux_threshs_log[ft])
+        if(len(flux[bright]) > 0):
+           z_selec = z[bright]
+           zsamples = np.zeros(shape = (n_rand))
+           for i in range(0,n_rand):
+               subsample = np.random.choice(z_selec, size=int(np.floor(len_subsample)))
+               zsamples[i] = np.median(subsample)
+
+           pos = np.where(zsamples > 0) 
+           std_redshifts[ft] = np.std(zsamples[pos])
+  
+    #catch nans
+    return np.nan_to_num(std_redshifts)
+
+def compute_cosmic_variance_number_counts(area_total, flux, xbins, n_rand):
+
+    std_counts= np.zeros(shape = (len(xbins)))
+    len_subsample = len(flux) / n_rand
+    counts_cum = np.zeros(shape = (n_rand,len(xbins)))
+    area_sub = area_total/n_rand
+
+    for i in range(n_rand):
+        subsample = np.random.choice(flux, size=int(np.floor(len_subsample)))
+        for ft in range(0,len(xbins)):
+            bright = np.where(subsample > xbins[ft])
+            if(len(subsample[bright]) > 0):
+               counts_cum[i,ft] = (len(subsample[bright]) + 0.0) / area_sub
+
+    #now compute standard deviation
+    for ft in range(0,len(xbins)):              
+        pos = np.where(counts_cum[:,ft] > 0)  
+        std_counts[ft] = np.std(np.log10(counts_cum[pos,ft]))
+    #catch nans
+    return np.nan_to_num(std_counts)

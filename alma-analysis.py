@@ -63,7 +63,7 @@ zbinsobs = np.arange(zlow,zupp,dzobs)
 xzobs   = zbinsobs + dzobs/2.0
 
 
-def plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts):
+def plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts, zdist_cosmicvar):
     xtit="$\\rm redshift$"
     ytit="$\\rm N(S>5 mJy)/dz/area [deg^{-2}]$"
 
@@ -139,7 +139,7 @@ def plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts):
 
     common.savefig(outdir, fig, "zdistribution-fluxcut-ALMAbands.pdf")
 
-def plot_numbercounts(plt, outdir, obsdir, ncounts):
+def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_err):
 
     #for cumulative number counts
     xlf_obs  = xlf-dm*0.5
@@ -157,6 +157,7 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
     idxs = (0, 1, 2, 3, 4)#, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
     bands = (3, 4, 5, 6, 8)#1, 2, 3, 4, 5)#, 9, 10, 11, 12, 13, 14, 15, 16,17, 18, 19, 20, 21, 22, 23, 24)
     labels= ('Band-9','Band-8', 'Band-7', 'Band-6', 'Band-4')
+    color_observations = 'SandyBrown'
     #(24, 25, 26, 27, 28, 29, 30, 31, 32)
     for subplot, idx, b in zip(subplots, idxs, bands):
 
@@ -172,37 +173,13 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
         common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtitplot, ytitplot, locators=(2, 2, 1, 1))
         ax.text(xleg,yleg, labels[idx])
 
-        if(idx == 2):
-            file = obsdir+'/lf/numbercounts/ncts850_Karim13.data'
-            lmg17,pg17,dpg17up,dpg17dn = np.loadtxt(file,usecols=[4,5,6,7],unpack=True)
-            ax.errorbar(np.log10(lmg17),np.log10(pg17),yerr=[np.log10(pg17) - np.log10(pg17-dpg17dn), np.log10(pg17+dpg17up) - np.log10(pg17)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='o', label='Karim+2013')
-            file = obsdir+'/lf/numbercounts/ncts-band7_Oteo16.data'
-            lmu17, pu17, dpu17dn, dpu17up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(dpu17up+pu17)-np.log10(pu17)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='v',label='Oteo+2016')
-
-        if(idx == 1):
-            file = obsdir+'/lf/numbercounts/ncts-band8_Klitsch20.data'
-            lmu17, pu17, dpu17up, dpu17dn = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(dpu17dn), np.log10(dpu17up)-np.log10(pu17)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='D',label='Klitsch+2020')
-
-        if(idx == 3):
-            file = obsdir+'/lf/numbercounts/ncts1p2mm_Fujimoto16.data'
-            lmf16, pf16, dpf16dn, dpf16up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmf16),pf16,yerr=[dpf16dn,dpf16up], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='s',label='Fujimoto+2016')
-            file = obsdir+'/lf/numbercounts/ncts1p2mm_Umehata17.data'
-            lmu17, pu17, dpu17up, dpu17dn = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(pu17+dpu17up)-np.log10(pu17)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='d',label='Umehata+2017')
-            file = obsdir+'/lf/numbercounts/ncts1p2mm_Htsukade18.data'
-            lmf16, pf16, dpf16dn, dpf16up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmf16),np.log10(pf16),yerr=[np.log10(pf16)-np.log10(pf16-dpf16dn), np.log10(pf16+dpf16up)-np.log10(pf16)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='^',label='Hatsukade+2018')
-            file = obsdir+'/lf/numbercounts/ncts1p2mm_Gonzalez-Lopez19.data'
-            lmf19, pf19, dpf19 = np.loadtxt(file,usecols=[0,1,2],unpack=True)
-            ax.errorbar(lmf19,np.log10(pf19),yerr=[np.log10(pf19)-np.log10(pf19-dpf19), np.log10(pf19+dpf19)-np.log10(pf19)], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='*',label='Gonzalez-Lopez+2020')
-
         #Predicted LF
         if(idx == 4):
             ind = np.where(ncounts[0,b,:] != 0)
             y = ncounts[0,b,ind]
+            yerrdn = ncounts[0,b,ind] - ncounts_cum_err[b,ind]
+            yerrup = ncounts[0,b,ind] + ncounts_cum_err[b,ind]
+            ax.fill_between(xlf_obs[ind], yerrdn[0], yerrup[0],facecolor='grey', alpha=0.5,interpolate=True)
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=3, label='Shark total')
  
             ind = np.where(ncounts[1,b,:] != 0)
@@ -210,10 +187,21 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
             ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted', label='disks')
             ind = np.where(ncounts[2,b,:] != 0)
             y = ncounts[2,b,ind]
-            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='bulges')
+            ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed', label='all bulges')
+
+            ind = np.where(ncounts[3,b,:] != 0)
+            y = ncounts[3,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'DarkCyan', linewidth=2, linestyle='dashdot', label='bulges by DI')
+            ind = np.where(ncounts[4,b,:] != 0)
+            y = ncounts[4,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'PaleVioletRed', linewidth=2, linestyle='dashdot', label='bulges by mergers')
+
         else:
             ind = np.where(ncounts[0,b,:] != 0)
             y = ncounts[0,b,ind]
+            yerrdn = ncounts[0,b,ind] - ncounts_cum_err[b,ind]
+            yerrup = ncounts[0,b,ind] + ncounts_cum_err[b,ind]
+            ax.fill_between(xlf_obs[ind], yerrdn[0], yerrup[0],facecolor='grey', alpha=0.5,interpolate=True)
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
  
             ind = np.where(ncounts[1,b,:] != 0)
@@ -222,19 +210,59 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts):
             ind = np.where(ncounts[2,b,:] != 0)
             y = ncounts[2,b,ind]
             ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
+
+            ind = np.where(ncounts[3,b,:] != 0)
+            y = ncounts[3,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'DarkCyan', linewidth=2, linestyle='dashdot')
+
+            ind = np.where(ncounts[4,b,:] != 0)
+            y = ncounts[4,b,ind]
+            ax.plot(xlf_obs[ind],y[0],'PaleVioletRed', linewidth=2, linestyle='dashdot')
+
+        #plot observations
+        if(idx == 2):
+            file = obsdir+'/lf/numbercounts/ncts850_Karim13.data'
+            lmg17,pg17,dpg17up,dpg17dn = np.loadtxt(file,usecols=[4,5,6,7],unpack=True)
+            ax.errorbar(np.log10(lmg17),np.log10(pg17),yerr=[np.log10(pg17) - np.log10(pg17-dpg17dn), np.log10(pg17+dpg17up) - np.log10(pg17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='o', label='Karim+2013')
+            file = obsdir+'/lf/numbercounts/ncts-band7_Oteo16.data'
+            lmu17, pu17, dpu17dn, dpu17up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
+            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(dpu17up+pu17)-np.log10(pu17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='v',label='Oteo+2016')
+
+        if(idx == 1):
+            file = obsdir+'/lf/numbercounts/ncts-band8_Klitsch20.data'
+            lmu17, pu17, dpu17up, dpu17dn = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
+            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(dpu17dn), np.log10(dpu17up)-np.log10(pu17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='D',label='Klitsch+2020')
+
+        if(idx == 3):
+            file = obsdir+'/lf/numbercounts/ncts1p2mm_Fujimoto16.data'
+            lmf16, pf16, dpf16dn, dpf16up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
+            ax.errorbar(np.log10(lmf16),pf16,yerr=[dpf16dn,dpf16up], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='s',label='Fujimoto+2016')
+            file = obsdir+'/lf/numbercounts/ncts1p2mm_Umehata17.data'
+            lmu17, pu17, dpu17up, dpu17dn = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
+            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(pu17+dpu17up)-np.log10(pu17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='d',label='Umehata+2017')
+            file = obsdir+'/lf/numbercounts/ncts1p2mm_Htsukade18.data'
+            lmf16, pf16, dpf16dn, dpf16up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
+            ax.errorbar(np.log10(lmf16),np.log10(pf16),yerr=[np.log10(pf16)-np.log10(pf16-dpf16dn), np.log10(pf16+dpf16up)-np.log10(pf16)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='^',label='Hatsukade+2018')
+            file = obsdir+'/lf/numbercounts/ncts1p2mm_Gonzalez-Lopez19.data'
+            lmf19, pf19, dpf19 = np.loadtxt(file,usecols=[0,1,2],unpack=True)
+            ax.errorbar(lmf19,np.log10(pf19),yerr=[np.log10(pf19)-np.log10(pf19-dpf19), np.log10(pf19+dpf19)-np.log10(pf19)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='*',label='Gonzalez-Lopez+2020')
+
         if (idx == 4):
-            common.prepare_legend(ax, ['k','b','r','grey','grey','grey'], bbox_to_anchor=[1.1,0.1])
-        if (idx == 1 or idx == 2 or idx == 3):
-            common.prepare_legend(ax, ['grey','grey','grey','grey'], loc='lower left')
+            common.prepare_legend(ax, ['k','b','r','DarkCyan','PaleVioletRed',color_observations,color_observations,color_observations], bbox_to_anchor=[1.1,0.1])
+        if (idx == 1 or idx == 2):
+            common.prepare_legend(ax, [color_observations,color_observations,color_observations,color_observations], loc='lower left')
+        if (idx == 3):
+            common.prepare_legend(ax, [color_observations,color_observations,color_observations,color_observations], bbox_to_anchor=[2.15,0.5])
+
 
     common.savefig(outdir, fig, "number-counts-deep-FIR-ALMA.pdf")
 
-def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, zdist, bands, zdist_flux_cuts):
+def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, areasub):
 
     (dec, ra, zobs, idgal) = hdf5_data
  
     bin_it = functools.partial(us.wmedians_cum, xbins=flux_threshs_log)
- 
+
     #components of apparent magnitudes:
     #(len(my_data), 2, 2, 5, nbands)
     #0: disk instability bulge
@@ -248,6 +276,9 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
     SEDs_dust_bulge_d = phot_data[3]
     SEDs_dust_bulge_m = phot_data[4]
 
+    #calculate the appropriate subsampling for variance calculation
+    bins_var = max(30, np.floor(areasub/0.5))
+    print(bins_var)
     #print SEDs_dust(0)
     indices = range(len(bands))
     for i, j in zip(bands, indices):
@@ -256,7 +287,9 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
         m = np.log10(10.0**(SEDs_dust[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[0,j,:] = ncounts[0,j,:] + H
+        ncounts_cum_err[j,:] = us.compute_cosmic_variance_number_counts(areasub, m[0,:], xlf-dm*0.5, int(bins_var))
         zdist_flux_cuts[j] = bin_it(x=m[0,:],y=zobs[ind])
+        zdist_cosmicvar[j] = us.compute_cosmic_variance_redshifts(m[0,:], zobs[ind], flux_threshs_log, int(bins_var))
 
         #contribution from disks and bulges
         ind = np.where((SEDs_dust_disk[i,:] > 0) & (SEDs_dust_disk[i,:] < 40))
@@ -292,8 +325,8 @@ def main():
     obsdir= '/home/clagos/shark/data/'
 
     Variable_Ext = True
-    sed_file = "Sting-SED-eagle-rr14-testmmbands"
-    subvols = range(20) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
+    sed_file = "Sting-SED-eagle-rr14"
+    subvols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]#, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 60, 61, 62, 63) #range(11) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
@@ -316,12 +349,14 @@ def main():
 
     nbands = len(seds[0])
     ncounts = np.zeros(shape = (5, len(bands), len(mbins)))
+    ncounts_cum_err = np.zeros(shape = (len(bands), len(mbins)))
     ncounts_cum = np.zeros(shape = (5, len(bands), len(mbins)))
 
     zdist = np.zeros(shape = (len(bands), len(zbins)))
-    zdist_flux_cuts = np.zeros(shape = (len(bands), 3,len(flux_threshs)))
+    zdist_flux_cuts = np.zeros(shape = (len(bands), 3, len(flux_threshs)))
+    zdist_cosmicvar = np.zeros(shape = (len(bands), len(flux_threshs)))
 
-    prepare_data(seds, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, zdist, bands, zdist_flux_cuts)
+    prepare_data(seds, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, areasub)
 
     if(totarea > 0.):
         for b in range(0,len(bands)):
@@ -329,10 +364,12 @@ def main():
                 ncounts_cum[0,b,j] = np.sum(ncounts[0,b,j:len(mbins)])
                 ncounts_cum[1,b,j] = np.sum(ncounts[1,b,j:len(mbins)])
                 ncounts_cum[2,b,j] = np.sum(ncounts[2,b,j:len(mbins)])
+                ncounts_cum[3,b,j] = np.sum(ncounts[3,b,j:len(mbins)])
+                ncounts_cum[4,b,j] = np.sum(ncounts[4,b,j:len(mbins)])
+
             #print 'band', b
             #for m,a,b,c in zip(xlf,ncounts_cum[0,b,:],ncounts_cum[1,b,:],ncounts_cum[2,b,:]):
             #    print m-dm*0.5,a/areasub,b/areasub,c/areasub
-
         ncounts   = ncounts/areasub/dm
         ncounts_cum = ncounts_cum/areasub
         zdist = zdist/areasub
@@ -346,8 +383,8 @@ def main():
     if(Variable_Ext):
        outdir = os.path.join(outdir, 'eagle-rr14')
 
-    plot_numbercounts(plt, outdir, obsdir, ncounts_cum)
-    plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts)
+    plot_numbercounts(plt, outdir, obsdir, ncounts_cum, ncounts_cum_err)
+    plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts, zdist_cosmicvar)
 
 if __name__ == '__main__':
     main()
