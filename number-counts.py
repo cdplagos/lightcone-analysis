@@ -169,7 +169,8 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             common.prepare_legend(ax, ['k','k','b','r'], loc='lower right')
     common.savefig(outdir, fig, "number-counts-deep-lightcone-optical.pdf")
 
-    fig = plt.figure(figsize=(12,12))
+
+
 
     subplots = (331, 332, 333, 334, 335, 336, 337, 338, 339)#, 5510, 5511, 5512, 5513, 5514, 5515, 5516, 5517, 5518, 5519, 5520, 5521, 5522, 5523, 5524, 5525)
     idx = (0, 1, 2, 3, 4, 5, 6, 7, 8)#, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
@@ -379,6 +380,46 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             common.prepare_legend(ax, ['k','b','r','LightSalmon'], loc='lower right')
     common.savefig(outdir, fig, "number-counts-deep-lightcone-selected.pdf")
 
+
+    xmin, xmax, ymin, ymax = 14, 24, 1 , 5.2
+    xleg = xmin + 0.2 * (xmax-xmin)
+    yleg = ymax - 0.1 * (ymax-ymin)
+
+    fig = plt.figure(figsize=(5,7))
+    subplots = (211, 212)#, 5510, 5511, 5512, 5513, 5514, 5515, 5516, 5517, 5518, 5519, 5520, 5521, 5522, 5523, 5524, 5525)
+    idx = (0, 1)#, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
+    bands = (12, 13)#, 18, 19, 20, 21, 22, 23, 24)
+    labels= ('IRAC 3.6', 'IRAC 4.5')#, 'P70', 'P100', 'P160', 'S250', 'S350', 'S500')
+    obs_start = (1048,1095)
+    obs_end   = (1077,1122)
+
+    for subplot, idx, b in zip(subplots, idx, bands):
+
+        ax = fig.add_subplot(subplot)
+        ytitplot = ytit
+        xtitplot = xtit
+        common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtitplot, ytitplot, locators=(2, 2, 1, 1))
+        ax.text(xleg,yleg, labels[idx])
+
+        ax.errorbar(lm[obs_start[idx]:obs_end[idx]], yobs[obs_start[idx]:obs_end[idx]], yerr=[yobs[obs_start[idx]:obs_end[idx]]-ydn[obs_start[idx]:obs_end[idx]],yup[obs_start[idx]:obs_end[idx]]-yobs[obs_start[idx]:obs_end[idx]]], ls='None', mfc='None', ecolor = 'grey', mec='grey',marker='o')
+
+        #Predicted LF
+        ind = np.where(ncounts[0,b,:] != 0)
+        y = ncounts[0,b,ind]
+        ax.plot(xlf_obs[ind],y[0],'k', linewidth=3)
+
+        for ai,bi in zip(xlf_obs[ind],y[0]-dm):
+            print(ai,bi)
+
+        ind = np.where(ncounts[1,b,:] != 0)
+        y = ncounts[1,b,ind]
+        ax.plot(xlf_obs[ind],y[0],'b', linewidth=2, linestyle='dotted')
+        ind = np.where(ncounts[2,b,:] != 0)
+        y = ncounts[2,b,ind]
+        ax.plot(xlf_obs[ind],y[0],'r', linewidth=2, linestyle='dashed')
+    
+    common.savefig(outdir, fig, "number-counts-deep-lightcone-IRACbands.pdf")
+
 def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, nbands, ncounts_nodust, zdist):
 
     (dec, ra, zobs, idgal) = hdf5_data
@@ -431,7 +472,21 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
            ind = np.where((SEDs_dust[i,:] > -10) & (SEDs_dust[i,:] < 14.6525))
            H, bins_edges = np.histogram(zobs[ind],bins=np.append(zbins,zupp))
            zdist[:] = zdist[:] + H
+ 
 
+    #JCMT 850microns band
+    band850 = 26
+    threshALESS = 16.514459348683918 #in AB magnitudes
+    ind = np.where((SEDs_dust[band850,:] > -10) & (SEDs_dust[band850,:] <= threshALESS))
+    SMGs_SEDs_dust = SEDs_dust[:,ind]
+    nsmgs = len(SEDs_dust[band850,ind])
+
+    #bandK = 10
+    #nokdetected = np.where(SMGs_SEDs_dust[bandK,:] > 25.7)
+    #n_nonk = len(SMGs_SEDs_dust[bandK,nokdetected])
+
+    #print("fraction of undetected SMGs in K-band", float(n_nonk)/float(nsmgs))
+      
 def main():
 
     lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
@@ -440,8 +495,8 @@ def main():
     obsdir= '/home/clagos/shark/data/'
 
     Variable_Ext = True
-    sed_file = "Sting-SED-eagle-rr14_tb1p5"
-    subvols = (0,1,2,3,4,5,6,7,8,9,10) #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
+    sed_file = "Sting-SED-eagle-rr14"
+    subvols = range(64) #[0] #(0,1,2,3,4,5,6,7,8,9,10) #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
@@ -484,7 +539,7 @@ def main():
 
 
     if(Variable_Ext):
-       outdir = os.path.join(outdir, 'eagle-rr14-alphaSF1p5')
+       outdir = os.path.join(outdir, 'eagle-rr14')
 
     plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nodust)
     plot_redshift(plt, outdir, obsdir, zdist)

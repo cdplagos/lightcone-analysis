@@ -197,13 +197,13 @@ def read_data(model_dir, snapshot, fields, subvolumes, include_h0_volh=True):
 
     return list(data.values())
 
-def read_lightcone(model_dir, fields, subvolumes):
+def read_lightcone(model_dir, fields, subvolumes, filename):
     """Read the mocksky.hdf5 file for the given model/subvolume"""
 
     data = collections.OrderedDict()
     for idx, subv in enumerate(subvolumes):
 
-        fname = os.path.join(model_dir, 'split', 'mocksky_%02d.hdf5' % subv)
+        fname = os.path.join(model_dir, 'split', filename + '_%02d.hdf5' % subv)
         print('Reading galaxies data from %s' % fname)
         with h5py.File(fname, 'r') as f:
             for gname, dsnames in fields.items():
@@ -218,6 +218,29 @@ def read_lightcone(model_dir, fields, subvolumes):
                     data[full_name] = l
 
     return list(data.values())
+
+def read_attenuation(model_dir, fields, subvolumes, filename):
+    """Read the extinction.hdf5 file for the given model/subvolume"""
+
+    data = collections.OrderedDict()
+    for idx, subv in enumerate(subvolumes):
+
+        fname = os.path.join(model_dir, 'split', 'extinction-' + filename + '_%02d.hdf5' % subv)
+        print('Reading galaxies data from %s' % fname)
+        with h5py.File(fname, 'r') as f:
+            for gname, dsnames in fields.items():
+                group = f[gname]
+                for dsname in dsnames:
+                    full_name = '%s/%s' % (gname, dsname)
+                    l = data.get(full_name, None)
+                    if l is None:
+                        l = group[dsname].value
+                    else:
+                        l = np.concatenate([l, group[dsname].value])
+                    data[full_name] = l
+
+    return list(data.values())
+
 
 def read_temperature(model_dir, fields, subvolumes, temp_file):
     """Read the temp_file*.hdf5 file for the given model/subvolume"""

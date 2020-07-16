@@ -19,18 +19,83 @@
 """HMF plots"""
 
 import numpy as np
+import functools
 import common
 import os
-
+import utilities_statistics as us
+ 
 ##################################
 h0 = 0.6751
+PI = 3.141592654
+
 #the parameter below considers the difference between 
 #the peak flux and the maximum in a box-shaped emission line
 boost_box_profile = 1.5
 
-def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, subvols, lightcone_dir,  nbands):
+# Mass function initialization
 
-    (dec, ra, zobs, idgal, sfrb, sfrd, mstarb, mstard, rsb, rsd, id_group) = hdf5_data
+vlow = 1.5
+vupp = 3.5
+dv = 0.25
+vbins = np.arange(vlow,vupp,dv)
+xvf   = vbins + dv/2.0
+
+
+def plot_lco_vel(plt, outdir, lco_vel_scaling, vcobright, lcobright, mvir_hostcobright):
+
+    fig = plt.figure(figsize=(5,4.5))
+    ytit = "$\\rm log_{10} (\\rm L_{\\rm CO(1-0)}/K\\, km\\, s^{-1}\\, pc^2)$"
+    xtit = "$\\rm log_{10}(\\rm FWHM/\\rm km \\, s^{-1})$"
+    xmin, xmax, ymin, ymax = 1.5, 3.5, 6, 12
+    xleg = xmax - 0.2 * (xmax - xmin)
+    yleg = ymax - 0.1 * (ymax - ymin)
+
+    ax = fig.add_subplot(111)
+    common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(0.1, 1, 0.1, 1))
+    ax.text(xleg, yleg, 'z=2')
+
+    #Predicted relation
+    ind = np.where(lco_vel_scaling[0,0,:] != 0)
+    yplot = lco_vel_scaling[0, 0,ind]
+    errdn = lco_vel_scaling[0, 1,ind]
+    errup = lco_vel_scaling[0, 2,ind]
+
+    xplot = xvf[ind]
+    ax.errorbar(xplot,yplot[0],yerr=[errdn[0],errup[0]], ls='None', mfc='None', ecolor = 'b', mec='b',marker='o',label="all galaxies")
+    print("relation for all galaxies")
+    for a,b,c,d in zip(xplot,yplot[0],errdn[0],errup[0]):
+        print (a,b,c,d)
+
+
+    ind = np.where(lco_vel_scaling[1,0,:] != 0)
+    yplot = lco_vel_scaling[1, 0,ind]
+    errdn = lco_vel_scaling[1, 1,ind]
+    errup = lco_vel_scaling[1, 2,ind]
+
+    xplot = xvf[ind]
+    ax.errorbar(xplot,yplot[0],yerr=[errdn[0],errup[0]], ls='None', mfc='None', ecolor = 'r', mec='r',marker='s',label="$M_{\\rm halo}> 10^{13}\\, M_{\\odot}$")
+    print("relation for cluster galaxies")
+    for a,b,c,d in zip(xplot,yplot[0],errdn[0],errup[0]):
+        print (a,b,c,d)
+
+    ind = np.where(mvir_hostcobright <= 13)
+    ax.plot(vcobright[ind], lcobright[ind], 'bo', markersize=1, alpha=0.5)
+
+    ind = np.where(mvir_hostcobright > 13)
+    ax.plot(vcobright[ind], lcobright[ind], 'ro', markersize=3, alpha=0.5)
+
+    print("individual galaxies")
+    for a,b,c in zip(vcobright, lcobright, mvir_hostcobright):
+        print(a,b,c)
+    common.prepare_legend(ax, ['b','r'], loc=4)
+    common.savefig(outdir, fig, 'lco_fwhm_z2.pdf')
+
+
+def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, subvols, lightcone_dir,  nbands, lco_vel_scaling):
+
+    bin_it = functools.partial(us.wmedians, xbins=xvf)
+
+    (dec, ra, zobs, idgal, sfrb, sfrd, mstarb, mstard, rsb, rsd, id_group, dc, mvir_host) = hdf5_data
     (SCO, SCO_peak) = hdf5_co_data
     (id_group_sky, mvir, n_selec, n_all, ra_group, dec_group, zobs_group) = hdf5_data_groups
     #(SCO, id_cos) = co_hdf5_data
@@ -63,6 +128,19 @@ def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, 
     bands = (2, 3, 4, 5, 6, 10, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32)
     fluxSEDs = 10.0**(SEDs_dust/(-2.5)) * 3631.0 * 1e3 #in mJy
 
+    dgal = 4.0 * PI * pow((1.0+zobs) * dc/h0, 2.0)
+
+    LCO = SCO[:, 0] * dgal * 3.25e7 / (115.2712)**2.0 / (4.0*PI)
+    ind = np.where((zobs < 2.1) & (LCO > 1e6))
+    lco_vel_scaling[0, :] = bin_it(x=np.log10(vline[ind]), y=np.log10(LCO[ind]))
+    ind = np.where((zobs < 2.1) & (LCO > 1e6) & (mvir_host/h0 > 1e13))
+    lco_vel_scaling[1, :] = bin_it(x=np.log10(vline[ind]), y=np.log10(LCO[ind]))
+
+    ind = np.where((zobs >1.9) & (zobs < 2.1) & (LCO > 1e10))
+    lcobright = np.log10(LCO[ind]) 
+    vcobright = np.log10(vline[ind])
+    mvir_hostcobright = np.log10(mvir_host[ind]/h0)
+
     #S850 microns selected to have a flux >0.05mJy
     ind = np.where((SEDs_dust[26,:] > 0) & (SEDs_dust[26,:] < 19.652640611442184))
     SEDs_dustin = SEDs_dust[:,ind]
@@ -85,7 +163,7 @@ def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, 
     id_group_skyin = id_group_sky[ingroup]
     zobs_groupin = zobs_group[ingroup]
 
-    writeon = True
+    writeon = False
     if(writeon == True):
        with open('/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Shark-deep-opticalLightcone-AtLAST.txt', 'wb') as fil:
             fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
@@ -139,11 +217,17 @@ def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, 
             for a,b,c,d,e,f in zip(id_group_skyin, mvirin, ra_groupin, dec_groupin, n_allin, zobs_groupin):
                 fil.write("%10.0f %5.2f %5.10f %5.10f %5.0f %5.2f\n" % (a,b,c,d,e,f))
 
+    return (vcobright, lcobright, mvir_hostcobright)
+
 def main():
 
     lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
     outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
     obsdir= '/home/clagos/shark/data/'
+
+
+    #initialize relevant matrices
+    lco_vel_scaling = np.zeros(shape = (2, 3,len(vbins)))
 
     subvols = range(64) #(0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #(9,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) #0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35) #range(64)
@@ -164,7 +248,7 @@ def main():
 
     fields = {'galaxies': ('dec', 'ra', 'zobs',
                            'id_galaxy_sky','sfr_burst','sfr_disk','mstars_bulge','mstars_disk','rstar_bulge_apparent',
-                           'rstar_disk_apparent','id_group_sky')}
+                           'rstar_disk_apparent','id_group_sky','dc', 'mvir_hosthalo')}
 
     hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
 
@@ -177,7 +261,9 @@ def main():
     hdf5_co_data = common.read_co_lightcone(lightcone_dir, fields, subvols)
 
     nbands = len(seds[0])
-    prepare_data(seds, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, subvols, lightcone_dir, nbands)
+    (vcobright, lcobright, mvir_hostcobright) = prepare_data(seds, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, subvols, lightcone_dir, nbands, lco_vel_scaling)
+    print(max(mvir_hostcobright))
+    plot_lco_vel(plt, outdir, lco_vel_scaling, vcobright, lcobright, mvir_hostcobright)
 
 
 if __name__ == '__main__':

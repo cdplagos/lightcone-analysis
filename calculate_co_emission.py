@@ -75,8 +75,9 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
 
     nh   = dataPDR[:,3]
     ind = np.where(nh == 1e4)
-    interpolator = interpolate.LinearNDInterpolator(zip(Zmod[ind], GUV[ind], CRs[ind]), np.squeeze(Xconv_Av3[ind]))
-    interpolator_nn = interpolate.NearestNDInterpolator(zip(Zmod[ind], GUV[ind], CRs[ind]), np.squeeze(Xconv_Av3[ind]))
+    print(Zmod[ind], GUV[ind], CRs[ind], np.squeeze(Xconv_Av3[ind]))
+    interpolator = interpolate.LinearNDInterpolator(list(zip(Zmod[ind], GUV[ind], CRs[ind])), np.squeeze(Xconv_Av3[ind]))
+    interpolator_nn = interpolate.NearestNDInterpolator(list(zip(Zmod[ind], GUV[ind], CRs[ind])), np.squeeze(Xconv_Av3[ind]))
 
     MinZ = min(Zmod) #define minimum metallicity probed by the models.
     MaxZ = max(Zmod) #define maximum metallicity probed by the models.
@@ -88,7 +89,7 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
     MaxCRs = np.max(CRs) #define maximum CRs probed by the models.
 
     # read galaxy information in lightcone
-    (dec, ra, zobs, idgal, mmol_b, mmol_d, rd, rb, zd, zb, sfr_d, sfr_b, shi, dc,
+    (dec, ra, zobs, idgal, mmol_b, mmol_d, rd, rb, zd, zb, sfr_d, sfr_b, mgas_d, mgas_b, dc,
     mbh, mbh_acc_hh, mbh_acc_sb, jdisk, jbulge, inclination) = hdf5_data
 
     # The calculation below is done to ultimately compute the amout of X-ray flux in the galaxy:
@@ -143,11 +144,9 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
     zcoldg_b[ind] = MinZ
     zcoldg_b = np.clip(zcoldg_b, MinZ, MaxZ)
    
-    mHI = 2.356e5 / (1.0 + zobs) * pow(dc, 2.0) * shi * 1e+26 #HI mass in the disk in Msun
-
-    Mgas_disk =  mHI /XH + mmol_d/h0 #Msun
-    Mgas_bulge = mmol_b/h0 #Msun
-
+    Mgas_disk =  mgas_d/h0 #Msun
+    Mgas_bulge = mgas_b/h0 #Msun
+    print(Mgas_disk, Mgas_bulge)
     # calculation of quantities that go directly into the CO computation
     # calculation UV radiation field.
     def get_guv(sfr, mgas, z):
@@ -186,9 +185,9 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
 	# Interpolate linearly first
         # If extrapolation is needed we use the nearest neighbour interpolator
         xco = np.zeros(shape)
-        xco[ind, :] = 10.0 ** interpolator(zip(zcoldg[ind], guv[ind], CRRayFlux[ind]))
+        xco[ind, :] = 10.0 ** interpolator(list(zip(zcoldg[ind], guv[ind], CRRayFlux[ind])))
         isnan = np.where(np.isnan(xco[:, 0]))
-        xco[isnan, :] = 10.0 ** interpolator_nn(zip(zcoldg[isnan], guv[isnan], CRRayFlux[isnan]))
+        xco[isnan, :] = 10.0 ** interpolator_nn(list(zip(zcoldg[isnan], guv[isnan], CRRayFlux[isnan])))
 
         lco = np.zeros(shape)
         lco[ind, :] = mcold[ind] * XH / 313./ xco[ind]
@@ -215,10 +214,10 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
     vdisk = jdisk/rd * 2.0*np.sin(inclination*PI/180.0) + sigma_gas
     vbulge= jbulge/rb * 2.0*np.sin(inclination*PI/180.0) + sigma_gas
 
-    dgal = 4.0*PI * pow((1.0+zobs) * dc/h0, 2.0)
+    dgal = 4.0 * PI * pow((1.0+zobs) * dc/h0, 2.0)
 
     for i in range(0,10):
-        SCOtot[:,i]   = LCOtot[:,i]/dgal[:]
+        SCOtot[:,i]   = LCOtot[:,i]/dgal[:] * (1.0+zobs)
         nuCO_obs[:,i] = nuco[i]/(1.0+zobs)
         #define peak flux
         ind = np.where((rb > 0) & (rd > 0))
@@ -247,8 +246,8 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
 
 def main():
 
-    lightcone_dir = '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-narrow/'
-    outdir= '/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-narrow/split-CO/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/split-CO/'
     obsdir= '/home/clagos/git/shark/data/'
 
     subvols = range(64) 
@@ -259,9 +258,9 @@ def main():
     fields = {'galaxies': ('dec', 'ra', 'zobs',
                            'id_galaxy_sky', 'mmol_bulge', 'mmol_disk', 'rgas_disk_intrinsic', 
                            'rstar_bulge_intrinsic', 'zgas_disk', 'zgas_bulge', 'sfr_disk', 'sfr_burst', 
-                           's_hi', 'dc', 'mbh','mbh_acc_hh','mbh_acc_sb','jdisk','jbulge','inclination')}
+                           'mgas_disk','msgas_bulge', 'dc', 'mbh','mbh_acc_hh','mbh_acc_sb','jdisk','jbulge','inclination')}
     for sv in subvols:
-       hdf5_data = common.read_lightcone(lightcone_dir, fields, [sv])
+       hdf5_data = common.read_lightcone(lightcone_dir, fields, [sv], 'mocksky')
        prepare_data(hdf5_data, outdir, sv, lightcone_dir)
 
 if __name__ == '__main__':

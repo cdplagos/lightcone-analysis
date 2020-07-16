@@ -244,8 +244,8 @@ def prepare_data(hdf5_data, model_dir, subvol):
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves-g23/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/waves23/split/'
+    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
+    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/split/'
     obsdir= '/home/clagos/shark/data/'
 
     subvols = range(64)
@@ -256,8 +256,9 @@ def main():
                            'zgas_bulge', 'mstars_disk', 'mstars_bulge','sfr_disk','sfr_burst','id_galaxy_sky', 'id_galaxy_sam','inclination',
                            'snapshot','subvolume')}
 
+    name = 'mock'
     for subv in subvols:
-        hdf5_data = common.read_lightcone(lightcone_dir, fields, [subv])
+        hdf5_data = common.read_lightcone(lightcone_dir, fields, [subv], name)
         prepare_data(hdf5_data, lightcone_dir, subv)
 
 if __name__ == '__main__':

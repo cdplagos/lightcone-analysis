@@ -91,7 +91,19 @@ def plot_scos_bzk(plt, outdir, so_bzk, so_smg):
     common.savefig(outdir, fig, "SCO_SMGs.pdf")
 
 
-def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone_dir, ncounts, nbands, zdist):
+def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone_dir, ncounts, nbands, zdist, med_socled):
+
+    def medians(y):
+        result = np.zeros(shape = 3)
+        result[0] = np.median(y)
+        obj_bin = len(y)
+        #sort array on 1/y because we want it to sort from the smallest to the largest item, and the default of argsort is to order from the largest to the smallest.
+        IDs = np.argsort(y,kind='quicksort')
+        ID16th = int(np.floor(obj_bin*0.16))+1   #take the lower edge.
+        ID84th = int(np.floor(obj_bin*0.84))-1   #take the upper edge.
+        result[1] = np.abs(result[0] - y[IDs[ID16th]])
+        result[2] = np.abs(y[IDs[ID84th]] - result[0])
+        return result 
 
     (dec, ra, zobs, idgal) = hdf5_data
     (SCO, SCO_peak) = hdf5_co_data
@@ -113,7 +125,15 @@ def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone
     colbzk = (SEDs_dust[bandsz,:]-SEDs_dust[bandsk,:]) - (SEDs_dust[bandsg,:]-SEDs_dust[bandsz,:])
     bzkselec = np.where((colbzk > -0.2) & (SEDs_dust[bandsk,:] < 20) & (SEDs_dust[bandsk,:] > 10))
     so_bzk = SCO[bzkselec]
+    for i in range(10):
+        meds = medians(so_bzk[:,i])
+        med_socled[0,:,i] = meds
+
+    #for a,b,c in zip( med_socled[0,0,:], med_socled[0,1,:],med_socled[0,2,:]):
+    #    print a,b,c
+
     print 'number of selected galaxies',len(so_bzk[:,0]) 
+    print 'median BzK redshift', np.median(zobs[bzkselec])
 
     ind = np.where((SEDs_dust[26,:] > -10) & (SEDs_dust[26,:] < 14.6525))
     so_smg = SCO[ind]
@@ -131,7 +151,7 @@ def main():
 
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14-steep"
-    subvols = (0,1) # range(20) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
+    subvols = (0,1) #range(20) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
@@ -157,15 +177,15 @@ def main():
     nbands = len(seds[0])
     ncounts = np.zeros(shape = (5, nbands, len(mbins)))
     zdist = np.zeros(shape = (len(zbins)))
-
-    (so_bzk,so_smg) = prepare_data(seds,  ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone_dir, ncounts, nbands, zdist)
+    med_socled = np.zeros(shape = (2,3,10))
+    (so_bzk,so_smg) = prepare_data(seds,  ids_sed, hdf5_data, hdf5_co_data, subvols, lightcone_dir, ncounts, nbands, zdist, med_socled)
 
     if(Variable_Ext):
-       outdir = os.path.join(outdir, 'eagle-const')
+       outdir = os.path.join(outdir, 'eagle-rr14-steep')
 
     #plot_numbercounts(plt, outdir, obsdir, ncounts)
   
-    plot_scos_bzk(plt, outdir, so_bzk, so_smg)
+    #plot_scos_bzk(plt, outdir, so_bzk, so_smg)
 
 if __name__ == '__main__':
     main()
