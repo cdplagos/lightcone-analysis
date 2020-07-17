@@ -138,61 +138,6 @@ def sample_spt_2020(seds, z):
     print(zmed_spt[0,:], xz, np.sum(zmed_spt[0,:]))
     return (zmed_spt)
 
-
-def sample_bothwell(seds, co, z):
-
-    fluxes = 10.0**(seds[29,:]/(-2.5)) * 3631.0 * 1e3 #mJy
-    b13sources = np.loadtxt('S850mu_Bothwell13.dat')
-    b13sources[:,2] = b13sources[:,2]*3
-    tot_gals = np.sum(b13sources[:,2])
-    nbins = len(b13sources[:,0])
-    Nsampling = 50
-    cosleds_survey =  np.zeros(shape = (Nsampling, 10, 3))
-    co_gals = np.zeros(shape = (Nsampling, 10, int(tot_gals)))
-
-    zmeds = np.zeros(shape = (Nsampling))
-    for s in range(0,Nsampling):
-        g = 0
-        z_gals =  np.zeros(shape = (int(tot_gals)))
-        s850gals = np.zeros(shape = (int(tot_gals)))
-        for i in range(0,nbins):
-            ind = np.where((fluxes[:] > b13sources[i,0]) & (fluxes[:] < b13sources[i,1]))
-            if(len(fluxes[ind]) >= int(b13sources[i,2])):
-               fluxesin = fluxes[ind]
-               zin = z[ind]
-               ids = np.arange(len(fluxes[ind]))
-               cosledsin = np.zeros(shape = (len(fluxes[ind]),10))
-               for l in range(0,10):
-                   cosledsin[:,l] = co[ind,l]
-               selected = np.random.choice(ids, size=int(b13sources[i,2]))
-               for j in range(0,len(selected)):
-                   s850gals[g+j] = fluxesin[selected[j]]
-                   z_gals[g+j] = zin[selected[j]]
-                   for l in range(0,10):
-                       co_gals[s,l,g+j] = cosledsin[selected[j],l]
-               g = g + int(b13sources[i,2])
-
-        for l in range(0,10):
-            cosleds_survey[s,l,:] = us.gpercentiles(co_gals[s,l,:])
-
-        zmeds[s] = np.median(z_gals)
-
-    print(np.median(zmeds))
-
-    cosleds =  np.zeros(shape = (3, 10))
-    #ind = np.where(cosleds_survey[:,0,0] == np.max(cosleds_survey[:,0,0]))
-    ind = np.random.randint(0,49)
-    co_gals_selected = co_gals[ind, :, :] 
-    print(zmeds[ind])
-
-    for l in range(0,10):
-        cosleds[0,l] = cosleds_survey[ind,l,0]
-        cosleds[1,l] = cosleds_survey[ind,l,1]
-        cosleds[2,l] = cosleds_survey[ind,l,2]
-
-    print(co_gals_selected.shape)
-    return (co_gals_selected, s850gals, cosleds)
-
 def sample_aless(seds, sedsbm, sedsbd, sedsd, ms, sfr, mh, md, td, av, z, rg):
 
     bin_it_z = functools.partial(us.medians, xbins=xz)
@@ -1396,85 +1341,6 @@ def plot_seds_smgs(plt, outdir, obsdir, SEDs_dust_smgs, zsmgs, seds_aless):
     namefig = "comparison_aless_band7.pdf"
     common.savefig(outdir, fig, namefig)
 
-def plot_co_sleds_smgs(plt, outdir, obsdir, co_sleds_b13_gals, co_sleds_b13, s850_b13):
-
-    xj = np.array([1,2,3,4,5,6,7,8,9,10])
-    rangeflux = [4,6,10,25]
-    colors = ['Orange', 'SeaGreen', 'Purple']
-    #plot evolution of SMGs in the UVJ plane
-    xtit="$\\rm J_{\\rm upper}$"
-    ytit="$\\rm I_{\\rm CO}/Jy\\, km\\, s^{-1}$"
-
-    xmin, xmax, ymin, ymax = 0.5, 9, 0.05, 15
-    xleg = xmax - 0.18 * (xmax-xmin)
-    yleg = ymin + 0.1 * (ymax-ymin)
-
-    fig = plt.figure(figsize=(5,4))
-    ax = fig.add_subplot(111)
-    common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(1, 1, 1, 1))
-    plt.yscale('log')
-    xobs, yobs, yobserr, s850obs = np.loadtxt(obsdir + 'Gas/ICO_Bothwell13.dat', usecols=[0,1,2,3], unpack = True)
-    Valentino20x = [2,5,7]
-    Valentino20y = [0.3672050817314368,0.6037942140568486,0.5205529850302092]
-    Valentino20yerrdn = [0.2048617824396437,0.12075884281136973,0.23661499319554968]
-    Valentino20yerrup = [0.07344101634628725,0.24151768562273956,0.14196899591733003]
-        
-
-    fig.subplots_adjust(left=0.15, bottom=0.15)
-
-    shifts = (np.random.rand(len(xobs))-0.5)*0.1
-    labels=['[4,6]', '[6,10]', '>10']
-    for c in range(0,len(colors)):
-        galsin = np.where((s850obs > rangeflux[c]) & (s850obs < rangeflux[c+1]))
-        if(len(s850obs[galsin]) > 0):
-           col = colors[c]
-           xin = xobs[galsin]+shifts[galsin]
-           yin = yobs[galsin]
-           yer = yobserr[galsin]
-           ind=np.where(yer != 0)
-           ax.errorbar(xin[ind],yin[ind],yerr=[yer[ind],yer[ind]], ls='None', color=col, marker='s',fill=None, alpha=0.5, label=labels[c])
-           ind=np.where(yer == 0)
-           ax.plot(xin[ind],yin[ind],'v', color=col)
-
-    for c in range(0,len(colors)):
-        galsin = np.where((s850_b13 > rangeflux[c]) & (s850_b13 < rangeflux[c+1]))
-        if(len(s850_b13[galsin]) > 0):
-           col = colors[c]
-           co_sleds_b13_gals_in = co_sleds_b13_gals[:,galsin]
-           for g in range(0,len(co_sleds_b13_gals_in[0,:])):
-               ax.plot(xj,co_sleds_b13_gals_in[:,g], linestyle='solid', linewidth = 0.3, color=col)
-
-    common.prepare_legend(ax, colors, loc='upper right')
-    namefig = "example_co_sleds_850microns.pdf"
-    common.savefig(outdir, fig, namefig)
-
-    #plot evolution of SMGs in the UVJ plane
-    fig = plt.figure(figsize=(5,4))
-    ax = fig.add_subplot(111)
-    common.prepare_ax(ax, xmin, xmax, ymin, ymax, xtit, ytit, locators=(1, 1, 1, 1))
-    plt.yscale('log')
-    xobs, yobs, yobserr, s850obs = np.loadtxt(obsdir + 'Gas/ICO_Bothwell13.dat', usecols=[0,1,2,3], unpack = True)
-    fig.subplots_adjust(left=0.15, bottom=0.15)
-
-    for g in range(0,len(s850_b13)):
-        ax.plot(xj,co_sleds_b13_gals[:,g], linestyle='solid', linewidth = 0.3, color='Salmon')
-
-    ax.plot(xj,co_sleds_b13[0,:], linestyle='solid', linewidth=2, color='k')
-    ax.plot(xj,co_sleds_b13[0,:]-co_sleds_b13[1,:], linestyle='dotted', linewidth=3, color='k')
-    ax.plot(xj,co_sleds_b13[2,:]+co_sleds_b13[0,:], linestyle='dotted', linewidth=3, color='k')
-
-    shifts = (np.random.rand(len(xobs))-0.5)*0.1
-    ind=np.where(yobserr != 0)
-    ax.errorbar(xobs[ind]+shifts[ind],yobs[ind],yerr=[yobserr[ind],yobserr[ind]], ls='None', color='grey', marker='s',fill=None, alpha=0.5)
-    ind=np.where(yobserr == 0)
-    ax.plot(xobs[ind]+shifts[ind],yobs[ind],'v', color='blue')
-    ax.errorbar(Valentino20x, Valentino20y, yerr=[Valentino20yerrdn, Valentino20yerrup], ls='None', color='indigo', marker='D',alpha=0.8)
-
-    #common.prepare_legend(ax, 'k', loc='upper left')
-    namefig = "example_co_sleds_850microns_simple.pdf"
-    common.savefig(outdir, fig, namefig)
-
-
 def plot_props_z_spt(plt, outdir, obsdir, zmed_spt, area):
 
     #plot evolution of SMGs in the UVJ plane
@@ -1575,7 +1441,6 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
     #analyse sample of as2uds-like galaxies
     sample_as2uds(SEDs_dust,zobs,msb+msd,Av,sfrb+sfrd,mdust,temp_total)
     (seds_aless, props_aless) = sample_aless(SEDs_dust, SEDs_dust_bulge_m, SEDs_dust_bulge_d, SEDs_dust_disk, np.log10((msb+msd)/h0), np.log10((sfrb+sfrd)/h0/1e9), np.log10(mhalo/h0), np.clip(np.log10(mdust), 5.0, 12.0), temp_total, Av, zobs, (rgd * sfrd + rgb * sfrb) / (sfrb + sfrd) * 1e3/h0)
-    (co_sleds_b13_gals, s850_b13, co_sleds_b13) = sample_bothwell(SEDs_dust, SCO, zobs)
 
     for i, j in zip(bands, indices):
         #calculate number counts for total magnitude as well as no dust magnitudes
@@ -1726,7 +1591,7 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
     ind = np.where((SEDs_dust[9,:] > 27) & (SEDs_dust[13,:] < 24))
     print("Extreme H-dropouts have median zobs", np.median(zobs[ind]), " and are #", len(zobs[ind]))
 
-    return (temp_ms_sfr, cols_smgs, SEDs_dust_smgs, zsmgs, seds_aless, co_sleds_b13_gals, s850_b13, co_sleds_b13, zmed_spt)
+    return (temp_ms_sfr, cols_smgs, SEDs_dust_smgs, zsmgs, seds_aless, zmed_spt)
 
 def main():
 
@@ -1821,8 +1686,7 @@ def main():
     n_highz_500microns = np.zeros(shape =  (len(fbins)))
 
     #process data
-    (temp_ms_sfr, cols_smgs, SEDs_dust_smgs, zsmgs, seds_aless, 
-    co_sleds_b13_gals, s850_b13, co_sleds_b13, zmed_spt) = prepare_data(seds, seds_nodust, seds_ab, seds_ab_nodust, ids_sed, hdf5_data, hdf5_co_data, hdf5_attenuation, cont_bc, subvols, 
+    (temp_ms_sfr, cols_smgs, SEDs_dust_smgs, zsmgs, seds_aless, zmed_spt) = prepare_data(seds, seds_nodust, seds_ab, seds_ab_nodust, ids_sed, hdf5_data, hdf5_co_data, hdf5_attenuation, cont_bc, subvols, 
                                                                        lightcone_dir, nbands, bands, zdist_flux_cuts, zdist_flux_cuts_scatter,
                                                                        ncounts_optical_ir_smgs, bands_of_interest_for_smgs, selec_alma, ncounts_all, mags_vs_z_flux_cuts, 
                                                                        props_vs_z_flux_cuts, ms_z, n_highz_500microns, zdist_cosmicvar, most_massive_z, areasub)
@@ -1839,23 +1703,20 @@ def main():
     ncounts_all[ind] = np.log10(ncounts_all[ind])
     ind = np.where(n_highz_500microns > 0)
     n_highz_500microns[ind] = np.log10(n_highz_500microns[ind])
-    #for a,b in zip(xf, n_highz_500microns):
-    #    print a,b 
 
     if(Variable_Ext):
        outdir = os.path.join(outdir, 'eagle-rr14')
 
-    #plot_temp_mainseq(plt, outdir, temp_ms_sfr, zinterst, obsdir)
-    #plot_colors_smgs(plt, outdir, cols_smgs, zinterst)
-    #plot_seds_smgs(plt, outdir, obsdir, SEDs_dust_smgs, zsmgs, seds_aless)
+    plot_temp_mainseq(plt, outdir, temp_ms_sfr, zinterst, obsdir)
+    plot_colors_smgs(plt, outdir, cols_smgs, zinterst)
+    plot_seds_smgs(plt, outdir, obsdir, SEDs_dust_smgs, zsmgs, seds_aless)
 
-    #plot_redshift(plt, outdir, obsdir, zdist_flux_cuts, zdist_flux_cuts_scatter, zdist_cosmicvar)
-    #plot_number_counts_smgs(plt, outdir, obsdir,  ncounts_optical_ir_smgs, 
-    #                        bands_of_interest_for_smgs, ncounts_all)
-    #plot_magnitudes_z_smgs(plt, outdir, obsdir, mags_vs_z_flux_cuts)
-    #plot_props_z_smgs(plt, outdir, obsdir, props_vs_z_flux_cuts, ms_z, most_massive_z)
-    plot_co_sleds_smgs(plt, outdir, obsdir, co_sleds_b13_gals, co_sleds_b13, s850_b13)
-    #plot_props_z_spt(plt, outdir, obsdir, zmed_spt, areasub)
+    plot_redshift(plt, outdir, obsdir, zdist_flux_cuts, zdist_flux_cuts_scatter, zdist_cosmicvar)
+    plot_number_counts_smgs(plt, outdir, obsdir,  ncounts_optical_ir_smgs, 
+                            bands_of_interest_for_smgs, ncounts_all)
+    plot_magnitudes_z_smgs(plt, outdir, obsdir, mags_vs_z_flux_cuts)
+    plot_props_z_smgs(plt, outdir, obsdir, props_vs_z_flux_cuts, ms_z, most_massive_z)
+    plot_props_z_spt(plt, outdir, obsdir, zmed_spt, areasub)
 
 if __name__ == '__main__':
     main()
