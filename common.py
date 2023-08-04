@@ -190,20 +190,20 @@ def read_data(model_dir, snapshot, fields, subvolumes, include_h0_volh=True):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value])
+                        l = np.concatenate([l, group[dsname][()]])
                     data[full_name] = l
 
     return list(data.values())
 
-def read_lightcone(model_dir, fields, subvolumes, filename):
+def read_lightcone(model_dir, subdir, fields, subvolumes, filename):
     """Read the mocksky.hdf5 file for the given model/subvolume"""
 
     data = collections.OrderedDict()
     for idx, subv in enumerate(subvolumes):
 
-        fname = os.path.join(model_dir, 'split', filename + '_%02d.hdf5' % subv)
+        fname = os.path.join(model_dir, subdir, filename + '_%02d.hdf5' % subv)
         print('Reading galaxies data from %s' % fname)
         with h5py.File(fname, 'r') as f:
             for gname, dsnames in fields.items():
@@ -212,9 +212,9 @@ def read_lightcone(model_dir, fields, subvolumes, filename):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value])
+                        l = np.concatenate([l, group[dsname][()]])
                     data[full_name] = l
 
     return list(data.values())
@@ -234,9 +234,9 @@ def read_attenuation(model_dir, fields, subvolumes, filename):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value])
+                        l = np.concatenate([l, group[dsname][()]])
                     data[full_name] = l
 
     return list(data.values())
@@ -257,9 +257,9 @@ def read_temperature(model_dir, fields, subvolumes, temp_file):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value])
+                        l = np.concatenate([l, group[dsname][()]])
                     data[full_name] = l
 
     return list(data.values())
@@ -280,9 +280,9 @@ def read_co_lightcone(model_dir, fields, subvolumes):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value])
+                        l = np.concatenate([l, group[dsname][()]])
                     data[full_name] = l
 
     return list(data.values())
@@ -306,9 +306,9 @@ def read_sfh(model_dir, snapshot, fields, subvolumes, include_h0_volh=True):
                 full_name = '%s/%s' % (gnames, dsname)
                 l = data.get(full_name, None)
                 if l is None:
-                    l = group[dsname].value
+                    l = group[dsname][()]
                 else:
-                    l = np.concatenate([l, group[dsname].value])
+                    l = np.concatenate([l, group[dsname][()]])
                 data[full_name] = l
 
     return list(data.values()), delta_t, LBT
@@ -372,9 +372,9 @@ def read_photometry_data_hdf5(model_dir, fields, subvolumes, sed_file):
             # read ids
             i =  ids
             if i is None:
-                i = f['id_galaxy_sky'].value
+                i = f['id_galaxy_sky'][()]
             else:
-                i = np.concatenate([i, f['id_galaxy_sky'].value])
+                i = np.concatenate([i, f['id_galaxy_sky'][()]])
             ids = i
 
             for gname, dsnames in fields.items():
@@ -384,9 +384,9 @@ def read_photometry_data_hdf5(model_dir, fields, subvolumes, sed_file):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value], axis=1)
+                        l = np.concatenate([l, group[dsname][()]], axis=1)
                     data[full_name] = l
 
     return ids, list(data.values())
@@ -405,9 +405,9 @@ def read_CO_data_hdf5(model_dir, fields, subvolumes):
             # read ids
             i =  ids
             if i is None:
-                i = f['id_galaxy_sky'].value
+                i = f['id_galaxy_sky'][()]
             else:
-                i = np.concatenate([i, f['id_galaxy_sky'].value])
+                i = np.concatenate([i, f['id_galaxy_sky'][()]])
             ids = i
 
             for gname, dsnames in fields.items():
@@ -417,9 +417,9 @@ def read_CO_data_hdf5(model_dir, fields, subvolumes):
                     full_name = '%s/%s' % (gname, dsname)
                     l = data.get(full_name, None)
                     if l is None:
-                        l = group[dsname].value
+                        l = group[dsname][()]
                     else:
-                        l = np.concatenate([l, group[dsname].value], axis=1)
+                        l = np.concatenate([l, group[dsname][()]], axis=1)
                     data[full_name] = l
 
     return ids, list(data.values())

@@ -273,9 +273,9 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
     xtit="$\\rm app\, mag (AB)$"
     ytit="$\\rm log_{10}(N/{\\rm 0.5 mag}^{-1}/A\, deg^2)$"
 
-    xmin, xmax, ymin, ymax = 8, 30, -2 , 5.5
-    xmin2, xmax2 = 8, 24
-    xleg = xmin + 0.2 * (xmax-xmin)
+    xmin, xmax, ymin, ymax = 30, 8, -2 , 5.5
+    xmin2, xmax2 = 24, 8
+    xleg = xmax - 0.3 * (xmax-xmin)
     yleg = ymax - 0.1 * (ymax-ymin)
 
     fig = plt.figure(figsize=(12,12))
@@ -320,10 +320,10 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             xtitplot = xtit
         else:
             xtitplot = ' '
-        if(idx <= 5):
-            xminin, xmaxin= xmin, xmax
-        else:
-            xminin, xmaxin= xmin2, xmax2
+        #if(idx <= 5):
+        xminin, xmaxin= xmin, xmax
+        #else:
+        #    xminin, xmaxin= xmin2, xmax2
 
         common.prepare_ax(ax, xminin, xmaxin, ymin, ymax, xtitplot, ytitplot, locators=(2, 2, 1, 1))
         ax.text(xleg,yleg, labels[idx])
@@ -348,9 +348,9 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             ind = np.where(ncounts[0,b,:] != 0)
             y = ncounts[0,b,ind]
             ax.plot(xlf_obs[ind],y[0],'k', linewidth=3, label='Shark total')
-            ind = np.where(ncounts_nod[0,b,:] != 0)
-            y = ncounts_nod[0,b,ind]
-            ax.plot(xlf_obs[ind],y[0],'k', linewidth=1, label='no dust')
+            #ind = np.where(ncounts_nod[0,b,:] != 0)
+            #y = ncounts_nod[0,b,ind]
+            #ax.plot(xlf_obs[ind],y[0],'k', linewidth=1, label='no dust')
  
             ind = np.where(ncounts[1,b,:] != 0)
             y = ncounts[1,b,ind]
@@ -377,12 +377,12 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_nod):
             ax.plot(xlf_obs[ind],y[0],'LightSalmon', linewidth=2, linestyle='dashdot', label='bulges diskins')
 
         if (idx == 5):
-            common.prepare_legend(ax, ['k','b','r','LightSalmon'], loc='lower right')
+            common.prepare_legend(ax, ['k','b','r','LightSalmon'], loc='lower left')
     common.savefig(outdir, fig, "number-counts-deep-lightcone-selected.pdf")
 
 
     xmin, xmax, ymin, ymax = 14, 24, 1 , 5.2
-    xleg = xmin + 0.2 * (xmax-xmin)
+    xleg = xmax - 0.2 * (xmax-xmin)
     yleg = ymax - 0.1 * (ymax-ymin)
 
     fig = plt.figure(figsize=(5,7))
@@ -489,15 +489,17 @@ def prepare_data(phot_data, phot_data_nod, ids_sed, hdf5_data, subvols, lightcon
       
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
+    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
+    outdir= '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Plots/'
     #'/mnt/su3ctm/clagos/Stingray/output/medi-SURFS/Shark-Lagos18-final/deep-optical/'
-    obsdir= '/home/clagos/shark/data/'
+    obsdir= '/software/projects/pawsey0119/clagos/shark/data/'
 
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14"
-    subvols = range(64) #[0] #(0,1,2,3,4,5,6,7,8,9,10) #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
+    #subvols = range(64) #[0] #(0,1,2,3,4,5,6,7,8,9,10) #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35)
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
+    #subvols = [9,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
+    subvols = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,32,33,34]
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
@@ -517,7 +519,7 @@ def main():
     fields = {'galaxies': ('dec', 'ra', 'zobs',
                            'id_galaxy_sky')}
 
-    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
+    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols, "mock")
 
     nbands = len(seds[0])
     ncounts = np.zeros(shape = (5, nbands, len(mbins)))

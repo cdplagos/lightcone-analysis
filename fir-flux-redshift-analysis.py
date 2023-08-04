@@ -41,11 +41,11 @@ dmab = 0.5
 mbinsab = np.arange(mlowab,muppab,dmab)
 xlfab   = mbinsab + dmab/2.0
 
-zlow = 0
-zupp = 7.0
-dz = 0.25
-zbins = np.arange(zlow,zupp,dz)
-xz   = zbins + dz/2.0
+zlow2 = 0
+zupp2 = 8.0
+dz2 = 0.2
+zbins2 = np.arange(zlow2,zupp2,dz2)
+xz2   = zbins2 + dz2/2.0
 
 flow = 0
 fupp = 50.0
@@ -216,6 +216,13 @@ def sample_aless(seds, sedsbm, sedsbd, sedsd, ms, sfr, mh, md, td, av, z, rg):
  
 def sample_as2uds(seds,zobs,ms,Av,sfr,mdust,temp):
 
+
+    #"I3_Spitzer", "I4_Spitzer",
+    #(17): "W3_WISE", "W4_WISE", "P70_Herschel", "P100_Herschel",
+    #(21): "P160_Herschel", "S250_Herschel", "S350_Herschel", "S450_JCMT",
+    #(25): "S500_Herschel", "S850_JCMT", "Band9_ALMA", "Band8_ALMA",
+    #(29): "Band7_ALMA", "Band6_ALMA", "Band5_ALMA", "Band4_ALMA"
+
     selec_band7_flux = 16.954687496323121 #17.152640611442184 #16.954687496323121
     selec_band7_flux_bright = 13.566218351356687
     #check out a few relevant numbers of A-LESS-like galaxies
@@ -273,28 +280,43 @@ def sample_as2uds(seds,zobs,ms,Av,sfr,mdust,temp):
     print("Average Ms, sSFR, Av, T, zobs, Mdust of IRAC bright (%s, %s, %s, %s, %s, %s)" % (str(np.median(ms[bright])), str(np.median(ssfr[bright])), str(np.median(Av[bright])), str(np.median(temp[bright])), str(np.median(zobs[bright])), str(np.median(mdust[bright]))))
     print("Average Ms, sSFR, Av, T, zobs, Mdust of IRAC faint  (%s, %s, %s, %s, %s, %s)" % (str(np.median(ms[faint])), str(np.median(ssfr[faint])), str(np.median(Av[faint])), str(np.median(temp[faint])), str(np.median(zobs[faint])), str(np.median(mdust[faint]))))
 
-def color_color_analysis_smgs(colur, colrj, band6flux, z):
+def color_color_analysis_smgs(colur, colrj, band6flux, z, sfr, ms, md, ms_fit):
     
     zbins = [1, 2, 3, 4, 5]
     fluxthresh = [0.1, 1]
 
+    colclass = np.zeros(shape = len(z))
+    passiveall = np.where((colur[:] > 1.8) & (colur[:] - colrj[:] > 1))
+    colclass[passiveall] = 1
     for zb in zbins:
         for flux in fluxthresh:
-            passiveall = np.where((colur[:] > 1.8) & (colur[:] - colrj[:] > 1) & (z[:] > zb-0.5) & (z[:] < zb + 0.5))
+            passiveall = np.where((colclass[:] == 1) & (z[:] > zb-0.5) & (z[:] < zb + 0.5))
             numpassive = len(colur[passiveall])
             band6fluxpass = band6flux[passiveall]
+            sfrin = sfr[passiveall]
+            msin = ms[passiveall]
+            mdin = md[passiveall]
+            distoms = (sfrin - msin + 9.0) - (ms_fit[0] * np.log10(1.0 + z[passiveall])**2.0 + ms_fit[1]* np.log10(1.0 + z[passiveall]) +  ms_fit[2])
             smgs = np.where((band6fluxpass > flux) & (band6fluxpass < 1e10))
             numsmgspassive = len(band6fluxpass[smgs])
             if(numpassive > 0):
                print("Redshift %s, percentage of passive galaxies in u-r vs r-J that have band-6 > %s is %s of %s" % (str(zb), str(flux), str((numsmgspassive+0.0)/(numpassive+0.0)*100.0), str(numpassive)))
-        
+               print("Redshift %s, median stellar mass, sSFR, Md/Ms and MS_dist of passive galaxies in u-r vs r-J that have band-6 > %s are %s, %s, %s, %s" % (str(zb), str(flux), str(np.median(msin[smgs])), str(np.median(sfrin[smgs]-msin[smgs]+9.0)),str(np.median(mdin[smgs]-msin[smgs])), str(np.median(distoms[smgs]))))
+       
             smgs = np.where((band6flux > flux) & (band6flux < 1e10))
             numsmgs = len(band6flux[smgs])
-            colursmg = colur[smgs]
-            colrjsmg = colrj[smgs]
             if(numsmgs > 0):
                print("Redshift %s, percentage of band-6 sources with flux>%s that are classified passive galaxies in u-r vs r-J plane is %s of %s" % (str(zb), str(flux), str((numsmgspassive+0.0)/(numsmgs+0.0)*100.0), str(numsmgs)))
-    
+
+            sfall = np.where((colclass[:] == 0) & (z[:] > zb-0.5) & (z[:] < zb + 0.5))
+            band6fluxpass = band6flux[sfall]
+            sfrin = sfr[sfall]
+            msin = ms[sfall]
+            mdin = md[sfall]
+            distoms = (sfrin - msin + 9.0) - (ms_fit[0] * np.log10(1.0 + z[sfall])**2.0 + ms_fit[1]* np.log10(1.0 + z[sfall]) +  ms_fit[2])
+            smgs = np.where((band6fluxpass > flux) & (band6fluxpass < 1e10))
+            print("Redshift %s, median stellar mass, sSFR and Md/Ms and MS_dist of SF galaxies with in u-r vs r-J that have band-6 > %s are %s, %s, %s, %s" % (str(zb), str(flux), str(np.median(msin[smgs])), str(np.median(sfrin[smgs]-msin[smgs]+9.0)),str(np.median(mdin[smgs]-msin[smgs])),  str(np.median(distoms[smgs]))))
+
 
 #choose dust model between mm14, rr14 and constdust
 m14 = False
@@ -1267,9 +1289,9 @@ def plot_colors_smgs(plt, outdir, cols_smgs, zinterst):
             ind = np.where((cols_smgs[2,:] > zlow) & (cols_smgs[2,:] < zhigh) & (cols_smgs[0,:] >= 0) & (cols_smgs[1,:] >= 0) & (cols_smgs[3,:] > threshs[p]) & (cols_smgs[3,:] <= threshs[p+1]))
             x = cols_smgs[1,ind]
             y = cols_smgs[0,ind]
-            z = np.zeros(shape = (len(x[0])))
-            z[:] = 1.0/(len(x[0]) + 0.0) 
-            im = ax.hexbin(x[0], y[0], z, xscale='linear', yscale='linear', gridsize=(20,20), cmap='Spectral', mincnt=4, reduce_C_function=np.sum)
+            a = np.zeros(shape = (len(x[0])))
+            a[:] = 1.0/(len(x[0]) + 0.0) 
+            im = ax.hexbin(x[0], y[0], a, xscale='linear', yscale='linear', gridsize=(20,20), cmap='Spectral', mincnt=4, reduce_C_function=np.sum)
             xin = [0,0.8]
             yin = [1.8,1.8] 
             ax.plot(xin,yin,linestyle='dotted',color='k')
@@ -1442,6 +1464,25 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
     sample_as2uds(SEDs_dust,zobs,msb+msd,Av,sfrb+sfrd,mdust,temp_total)
     (seds_aless, props_aless) = sample_aless(SEDs_dust, SEDs_dust_bulge_m, SEDs_dust_bulge_d, SEDs_dust_disk, np.log10((msb+msd)/h0), np.log10((sfrb+sfrd)/h0/1e9), np.log10(mhalo/h0), np.clip(np.log10(mdust), 5.0, 12.0), temp_total, Av, zobs, (rgd * sfrd + rgb * sfrb) / (sfrb + sfrd) * 1e3/h0)
 
+
+    writeon = False
+    if(writeon == True):
+       #selec >1my in band-7
+       fluxes = 10.0**(SEDs_dust/(-2.5)) * 3631.0 * 1e3 #mJy
+       ind = np.where(fluxes[29,:] > 1)
+       seds_fluxes = fluxes[:,ind]
+       print("shape fluxes", seds_fluxes.shape)
+       zobsgals = zobs[ind]
+       temp_totalgals = temp_total[ind]
+       mdustgals = np.clip(np.log10(mdust[ind]), 5.0, 12.0) 
+       props_to_print = np.zeros(shape = (len(zobsgals), 22))
+       props_to_print[:, 0] = zobsgals[:]
+       props_to_print[:, 1] = temp_totalgals[:]
+       props_to_print[:, 2] = mdustgals[:]
+       for i in range(14,33):
+           props_to_print[:,i-11] = seds_fluxes[i,0,:]
+       np.savetxt(lightcone_dir + 'SEDs_BrightSMGs.txt', props_to_print)
+
     for i, j in zip(bands, indices):
         #calculate number counts for total magnitude as well as no dust magnitudes
         ind = np.where((SEDs_dust[i,:] > 0) & (SEDs_dust[i,:] < 40))
@@ -1537,7 +1578,7 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
 
     #fit to main sequence
     ms_fit = np.polyfit(np.log10(1.0 + zobs[ind]), np.log10((sfrb[ind] + sfrd[ind])/(msb[ind] + msd[ind])), 2)
-    #use fit to main sequence to compute temperautre evolution of galaxies in the main sequence and starbursts
+    #use fit to main sequence to compute temperatiure evolution of galaxies in the main sequence and starbursts
     ssfr_gal = (sfrb + sfrd) / (msb + msd)
     main_seq_position = np.log10(ssfr_gal) - (ms_fit[0] * np.log10(1.0 + zobs)**2.0 + ms_fit[1]* np.log10(1.0 + zobs) +  ms_fit[2])
 
@@ -1574,13 +1615,13 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
     temp_ms_sfr = np.nan_to_num(temp_ms_sfr)
 
     #band 7 sources with S>0.1mJy
-    ind = np.where((SEDs_dust[9,:] > 27) & (SEDs_dust[29,:] < 18.900065622282231))
-    cols_smgs = np.zeros(shape = (4, len(sfrd[ind])))
+    ind = np.where((SEDs_dust[9,:] > 0) & (SEDs_dust[29,:] < 18.900065622282231))
+    cols_smgs = np.zeros(shape = (3, len(sfrd[ind])))
     cols_smgs[0,:] = UVcol[ind]
     cols_smgs[1,:] = VJcol[ind]
     cols_smgs[2,:] = zobs[ind]
-    cols_smgs[3,:] = np.log10(10.0**(SEDs_dust[29,ind] / (-2.5)) * 3631.0 * 1e3) #in mJy
-    color_color_analysis_smgs(UVcol, VJcol, 10.0**(SEDs_dust[29,:] / (-2.5)) * 3631.0 * 1e3, zobs)
+
+    color_color_analysis_smgs(UVcol, VJcol, 10.0**(SEDs_dust[29,:] / (-2.5)) * 3631.0 * 1e3, zobs, np.log10((sfrb + sfrd) / h0) - 9.0, np.log10(msb + msd), np.log10(mdust), ms_fit)
 
     #SEDs band-7 sources with S>1mJy
     ind = np.where((SEDs_dust[29,:] > 0) & (SEDs_dust[29,:] < 16.400065622282231))
@@ -1590,6 +1631,13 @@ def prepare_data(phot_data, phot_data_nodust, phot_data_ab, phot_data_ab_nodust,
     #select extreme H-dropouts to test Wang+19 number density
     ind = np.where((SEDs_dust[9,:] > 27) & (SEDs_dust[13,:] < 24))
     print("Extreme H-dropouts have median zobs", np.median(zobs[ind]), " and are #", len(zobs[ind]))
+
+    ind = np.where((SEDs_dust[32,:] > 0) & (SEDs_dust[32,:] < 17.509309370364011))
+    print("Median redshift 2mm >0.36mJy:", np.median(zobs[ind]))
+    H, bins_edges = np.histogram(zobs[ind],bins=np.append(zbins2,zupp2))
+    print("Redshift Distribution")
+    for a,b in zip(xz2,H):
+        print(a,b/dz/area)
 
     return (temp_ms_sfr, cols_smgs, SEDs_dust_smgs, zsmgs, seds_aless, zmed_spt)
 
@@ -1604,7 +1652,7 @@ def main():
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14"
 
-    subvols = [0,1,2,3,4,5] #,6,7,8,9,10] #range(64) #[0,1,2,3,4,5] #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
+    subvols = [0,1,2,3,4,5,6,7,8,9,10] #range(64) #[0,1,2,3,4,5] #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
 #[0] #range(64) #[0, 1, 6, 7, 8, 9, 11, 12, 13, 15, 16, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 36, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 52, 54, 55, 56, 57, 59, 60, 61, 62]
     #[0,1]#,3,4,5,6,7,8,9,10] #range(64) #[0,1,2,3,4,5,6,7,8,9,10] #,11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 60, 61, 62, 63]#,11,12,13,14,15,16,17,18,19,20,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) #(0,1) #range(20) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
@@ -1707,16 +1755,16 @@ def main():
     if(Variable_Ext):
        outdir = os.path.join(outdir, 'eagle-rr14')
 
-    plot_temp_mainseq(plt, outdir, temp_ms_sfr, zinterst, obsdir)
-    plot_colors_smgs(plt, outdir, cols_smgs, zinterst)
-    plot_seds_smgs(plt, outdir, obsdir, SEDs_dust_smgs, zsmgs, seds_aless)
+    #plot_temp_mainseq(plt, outdir, temp_ms_sfr, zinterst, obsdir)
+    #plot_colors_smgs(plt, outdir, cols_smgs, zinterst)
+    #plot_seds_smgs(plt, outdir, obsdir, SEDs_dust_smgs, zsmgs, seds_aless)
 
-    plot_redshift(plt, outdir, obsdir, zdist_flux_cuts, zdist_flux_cuts_scatter, zdist_cosmicvar)
-    plot_number_counts_smgs(plt, outdir, obsdir,  ncounts_optical_ir_smgs, 
-                            bands_of_interest_for_smgs, ncounts_all)
-    plot_magnitudes_z_smgs(plt, outdir, obsdir, mags_vs_z_flux_cuts)
-    plot_props_z_smgs(plt, outdir, obsdir, props_vs_z_flux_cuts, ms_z, most_massive_z)
-    plot_props_z_spt(plt, outdir, obsdir, zmed_spt, areasub)
+    #plot_redshift(plt, outdir, obsdir, zdist_flux_cuts, zdist_flux_cuts_scatter, zdist_cosmicvar)
+    #plot_number_counts_smgs(plt, outdir, obsdir,  ncounts_optical_ir_smgs, 
+    #                        bands_of_interest_for_smgs, ncounts_all)
+    #plot_magnitudes_z_smgs(plt, outdir, obsdir, mags_vs_z_flux_cuts)
+    #plot_props_z_smgs(plt, outdir, obsdir, props_vs_z_flux_cuts, ms_z, most_massive_z)
+    #plot_props_z_spt(plt, outdir, obsdir, zmed_spt, areasub)
 
 if __name__ == '__main__':
     main()

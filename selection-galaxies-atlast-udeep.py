@@ -92,7 +92,7 @@ def plot_lco_vel(plt, outdir, lco_vel_scaling, vcobright, lcobright, mvir_hostco
     common.savefig(outdir, fig, 'lco_fwhm_z2.pdf')
 
 
-def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_data_groups, hdf5_data_mvir, lir, lir_bc_cont, subvols, lightcone_dir,  nbands, lco_vel_scaling):
+def prepare_data(phot_data, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, hdf5_data_mvir, lir, lir_bc_cont, subvols, lightcone_dir,  nbands, lco_vel_scaling):
 
     bin_it = functools.partial(us.wmedians, xbins=xvf)
 
@@ -125,10 +125,6 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
     SEDs_dust   = phot_data[0]
     SEDs_dust_bulge = phot_data[1]
 
-    SEDs_dust_radio = seds_rad[0]
-    SEDs_dust_radio_bulge = seds_rad[0]
-
-
     mstartot = np.log10((mstarb+mstard)/h0)
     sfrtot = np.log10((sfrb+sfrd)/h0/1e9)
     fracsb = sfrb / (sfrb+sfrd)
@@ -144,18 +140,20 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
     ind = np.where((mmold + mmolb) <= 0)
     mmol_tot[ind] = 1
     zgas_eff[ind] = 1e-6
-   #(0): "FUV_GALEX", "NUV_GALEX", "u_SDSS", "g_SDSS", "r_SDSS", "i_SDSS",
-   #(6): "z_SDSS", "Y_VISTA", "J_VISTA", "H_VISTA", "K_VISTA", "W1_WISE",
-   #(12): "I1_Spitzer", "I2_Spitzer", "W2_WISE", "I3_Spitzer", "I4_Spitzer",
-   #(17): "W3_WISE", "W4_WISE", "P70_Herschel", "P100_Herschel",
-   #(21): "P160_Herschel", "S250_Herschel", "S350_Herschel", "S450_JCMT",
-   #(25): "S500_Herschel", "S850_JCMT", "Band9_ALMA", "Band8_ALMA",
-   #(29): "Band7_ALMA", "Band6_ALMA", "Band5_ALMA", "Band4_ALMA"
 
-    bands = (2, 3, 4, 5, 6, 10, 12, 13, 19, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32)
-    bands_radio = (1, 2)
+#   (0): "FUV_GALEX", "NUV_GALEX", "u_SDSS", "g_SDSS", "r_SDSS", "i_SDSS",
+#   (6): "z_SDSS", "Y_VISTA", "J_VISTA", "H_VISTA", "K_VISTA", "W1_WISE",
+#   (12): "I1_Spitzer", "I2_Spitzer", "W2_WISE", "I3_Spitzer", "I4_Spitzer",
+#   (17): "W3_WISE", "W4_WISE", "M24_Spitzer", "P70_Herschel",
+#   (21): "P100_Herschel", "P160_Herschel", "S250_Herschel", "S350_Herschel",
+#   (25): "S450_JCMT", "S500_Herschel", "S850_JCMT", "Band_ionising_photons",
+#   (29): "Band9_ALMA", "Band8_ALMA", "Band7_ALMA", "Band6_ALMA",
+#   (33): "Band5_ALMA", "Band4_ALMA", "Band3_ALMA", "BandX_VLA", "BandC_VLA",
+#   (38): "BandS_VLA", "BandL_VLA", "Band_610MHz", "Band_325MHz",
+#   (42): "Band_150MHz"
+
+    bands = (2, 3, 4, 5, 6, 10, 12, 13, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31, 32, 34, 35)
     fluxSEDs = 10.0**(SEDs_dust/(-2.5)) * 3631.0 * 1e3 #in mJy
-    fluxSEDs_radio = 10.0**(SEDs_dust_radio/(-2.5)) * 3631.0 * 1e3 #in mJy
 
     dgal = 4.0 * PI * pow((1.0+zobs) * dc/h0, 2.0)
 
@@ -170,12 +168,11 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
     vcobright = np.log10(vline[ind])
     mvir_hostcobright = np.log10(mvir_host[ind]/h0)
 
-    #S850 microns selected to have a flux >0.01mJy
-    ind = np.where((SEDs_dust[26,:] > 0) & (SEDs_dust[26,:] < 21.4))
+    #S850 microns selected to have a flux >0.0025mJy
+    ind = np.where((SEDs_dust[27,:] > 0) & (SEDs_dust[27,:] < 22.905215600602137))
+    print("Maximum redshift", max(zobs[ind]), " of a total number of galaxies", len(zobs[ind]))
     SEDs_dustin = SEDs_dust[:,ind]
-    SEDs_dust_radio_in = SEDs_dust_radio[:,ind]
     fluxSEDsin = fluxSEDs[:,ind]
-    fluxSEDs_radioin = fluxSEDs_radio[:,ind]
     SCOin = SCO[ind,:]
     SEDs_dustin = SEDs_dustin[:,0,:]
     fluxSEDsin = fluxSEDsin[:,0,:]
@@ -197,40 +194,16 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
     id_group_skyin = id_group_sky[ingroup]
     zobs_groupin = zobs_group[ingroup]
 
-    writeon = False
+    writeon = True
     write_study = False
-    with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Shark-deep-opticalLightcone-AtLAST-CO_p3.txt', 'w') as fil:
-         fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
-         fil.write("#SED modelling as described in Lagos et al. (2019).\n")
-         fil.write("#area 107.889 deg2\n")
-         fil.write("#S_850microns > 0.01 milli Jy\n")
-         fil.write("#units\n")
-         fil.write("#CO integrated line fluxes in Jy km/s\n")
-         fil.write("#FWHM in km/s\n")
-         fil.write("#\n")
-         fil.write("#SCO(1-0) SCO(2-1) SCO(3-2) SCO(4-3) SCO(5-4) SCO(6-5) SCO(7-6) SCO(8-7) SCO(9-8) SCO(10-9) FWHM\n")
-         for a,b,c,d,e,f,g,h,i,j,k in zip(SCOin[0,:], SCOin[1,:], SCOin[2,:], SCOin[3,:], SCOin[4,:], SCOin[5,:], SCOin[6,:], SCOin[7,:], SCOin[8,:], SCOin[9,:], vline[ind]):
-             fil.write("%5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.5f\n" % (a,b,c,d,e,f,g,h,i,j,k))
-
-    with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Shark-deep-opticalLightcone-AtLAST-Groups_p3.txt', 'w') as fil:
-         fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
-         fil.write("#SED modelling as described in Lagos et al. (2019).\n")
-         fil.write("#area 107.889 deg2\n")
-         fil.write("#S_850microns > 0.01 milli Jy\n")
-         fil.write("#units\n")
-         fil.write("#mvir in [Msun]\n")
-         fil.write("#\n")
-         fil.write("#id_group_galaxy mvir ra_group dec_group num_all_satellites\n")
-         for a,b,c,d,e,f in zip(id_group_skyin, mvirin, ra_groupin, dec_groupin, n_allin, zobs_groupin):
-             fil.write("%10.0f %5.5f %5.10f %5.10f %5.0f %5.5f\n" % (a,b,c,d,e,f))
 
     if(writeon == True):
        if(write_study == True):
-           with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Shark-deep-opticalLightcone-dust_cont_study.txt', 'w') as fil:
-                fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
+           with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Shark-ultradeep-opticalLightcone-dust_cont_study.txt', 'w') as fil:
+                fil.write("#Galaxies from Shark (Lagos et al. 2018) in the ultra-deep lightcone\n")
                 fil.write("#SED modelling as described in Lagos et al. (2019).\n")
-                fil.write("#area 107.889 deg2\n")
-                fil.write("#S_850microns > 0.01 milli Jy\n")
+                fil.write("#area 59.9809632235205 deg2\n")
+                fil.write("#S_850microns > 0.0025 milli Jy\n")
                 fil.write("#units\n")
                 fil.write("#mstar[Msun]\n")
                 fil.write("#sfr[Msun/yr]\n")
@@ -238,16 +211,39 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
                 fil.write("#magnitudes AB\n")
                 fil.write("#fluxes in units of mJy\n")
                 fil.write("#dec ra redshift log10(mstar) log10(sfr) flux_S850_JCMT flux_Band7_ALMA flux_Band6_ALMA flux_Band5_ALMA flux_Band4_ALMA SCO(1-0) SCO(2-1) SCO(3-2) SCO(4-3) SCO(5-4) SCO(6-5) log10(Mmol) log10(LIR[Lsun]) Tdust_eff[K]\n")
-                for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t in zip(dec[ind], ra[ind], zobs[ind], mstartot[ind], sfrtot[ind], fluxSEDsin[26,:], fluxSEDsin[29,:], fluxSEDsin[30,:], fluxSEDsin[31,:], fluxSEDsin[32,:], SCOin[0,:], SCOin[1,:], SCOin[2,:], SCOin[3,:], SCOin[4,:], SCOin[5,:], np.log10(mmol_tot[ind]), lir_in[:], tdust_effin[:]):
+                for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t in zip(dec[ind], ra[ind], zobs[ind], mstartot[ind], sfrtot[ind], fluxSEDsin[27,:], fluxSEDsin[31,:], fluxSEDsin[32,:], fluxSEDsin[33,:], fluxSEDsin[34,:], SCOin[0,:], SCOin[1,:], SCOin[2,:], SCOin[3,:], SCOin[4,:], SCOin[5,:], np.log10(mmol_tot[ind]), lir_in[:], tdust_effin[:]):
                        fil.write("%5.10f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f\n" % (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t))
 
    
+       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Shark-ultra-deep-opticalLightcone-AtLAST-CO.txt', 'w') as fil:
+            fil.write("#Galaxies from Shark (Lagos et al. 2018) in the ultra-deep lightcone\n")
+            fil.write("#SED modelling as described in Lagos et al. (2019).\n")
+            fil.write("#area 59.9809632235205 deg2\n")
+            fil.write("#S_850microns > 0.0025 milli Jy\n")
+            fil.write("#units\n")
+            fil.write("#CO integrated line fluxes in Jy km/s\n")
+            fil.write("#FWHM in km/s\n")
+            fil.write("#\n")
+            fil.write("#SCO(1-0) SCO(2-1) SCO(3-2) SCO(4-3) SCO(5-4) SCO(6-5) SCO(7-6) SCO(8-7) SCO(9-8) SCO(10-9) FWHM\n")
+            for a,b,c,d,e,f,g,h,i,j,k in zip(SCOin[0,:], SCOin[1,:], SCOin[2,:], SCOin[3,:], SCOin[4,:], SCOin[5,:], SCOin[6,:], SCOin[7,:], SCOin[8,:], SCOin[9,:], vline[ind]):
+                fil.write("%5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.5f\n" % (a,b,c,d,e,f,g,h,i,j,k))
 
-       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Shark-deep-opticalLightcone-AtLAST.txt', 'w') as fil:
-               fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
+       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Shark-ultra-deep-opticalLightcone-AtLAST-Groups.txt', 'w') as fil:
+            fil.write("#Galaxies from Shark (Lagos et al. 2018) in the ultra-deep lightcone\n")
+            fil.write("#SED modelling as described in Lagos et al. (2019).\n")
+            fil.write("#area 59.9809632235205 deg2\n")
+            fil.write("#S_850microns > 0.0025 milli Jy\n")
+            fil.write("#units\n")
+            fil.write("#mvir in [Msun]\n")
+            fil.write("#\n")
+            fil.write("#id_group_galaxy mvir ra_group dec_group num_all_satellites\n")
+            for a,b,c,d,e,f in zip(id_group_skyin, mvirin, ra_groupin, dec_groupin, n_allin, zobs_groupin):
+                fil.write("%10.0f %5.5f %5.10f %5.10f %5.0f %5.5f\n" % (a,b,c,d,e,f))
+       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Shark-ultra-deep-opticalLightcone-AtLAST.txt', 'w') as fil:
+               fil.write("#Galaxies from Shark (Lagos et al. 2018) in the ultra-deep lightcone\n")
                fil.write("#SED modelling as described in Lagos et al. (2019).\n")
-               fil.write("#area 107.889 deg2\n")
-               fil.write("#S_850microns > 0.01 milli Jy\n")
+               fil.write("#area 59.9809632235205 deg2\n")
+               fil.write("#S_850microns > 0.0025 milli Jy\n")
                fil.write("#units\n")
                fil.write("#mstar[Msun]\n")
                fil.write("#sfr[Msun/yr]\n")
@@ -259,42 +255,43 @@ def prepare_data(phot_data, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_dat
                for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t,u,v,w,x,a1,a2,a3,a4,a5,a6 in zip(dec[ind], ra[ind], zobs[ind], zcos[ind], mstartot[ind], sfrtot[ind], re[ind], BT[ind], SEDs_dustin[0,:], SEDs_dustin[1,:], SEDs_dustin[2,:], SEDs_dustin[3,:], SEDs_dustin[4,:], SEDs_dustin[5,:], SEDs_dustin[6,:], SEDs_dustin[7,:], SEDs_dustin[8,:], SEDs_dustin[9,:], SEDs_dustin[10,:], SEDs_dustin[12,:], SEDs_dustin[13,:], SEDs_dustin[15,:], SEDs_dustin[16,:], id_group[ind], mvir_host_in[:], mvirz0_in[:], np.log10(mmol_tot[ind]), fracsb[ind], np.log10(zgas_eff[ind])):
                    fil.write("%5.10f %5.10f %5.7f %5.7f %5.7f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %5.5f %10.0f %5.5f %5.5f %5.5f %5.5f %5.5f\n" % (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,r,s,t,u,v,w,x,a1,a2,a3,a4,a5,a6))
       
-       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Shark-deep-opticalLightcone-AtLAST-FIR.txt', 'w') as fil:
-               fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
+       with open('/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Shark-ultra-deep-opticalLightcone-AtLAST-FIR.txt', 'w') as fil:
+               fil.write("#Galaxies from Shark (Lagos et al. 2018) in the ultra-deep lightcone\n")
                fil.write("#SED modelling as described in Lagos et al. (2019).\n")
-               fil.write("#area 107.889 deg2\n")
-               fil.write("#S_850microns > 0.01 milli Jy\n")
+               fil.write("#area 59.9809632235205 deg2\n")
+               fil.write("#S_850microns > 0.0025 milli Jy\n")
                fil.write("#units\n")
                fil.write("#fluxes in units of mJy\n")
                fil.write("#\n")
-               fil.write("#flux_24mu_Spitzer flux_P70_Herschel flux_P100_Herschel flux_P160_Herschel flux_S250_Herschel flux_S350_Herschel flux_S450_JCMT flux_S500_Herschel flux_S850_JCMT flux_Band7_ALMA flux_Band6_ALMA flux_Band5_ALMA flux_Band4_ALMA\n")
-               for a,b,c,d,e,f,g,h,i,j,k,l,o in zip(fluxSEDs_radio[2,:], fluxSEDsin[19,:], fluxSEDsin[20,:], fluxSEDsin[21,:], fluxSEDsin[22,:], fluxSEDsin[23,:], fluxSEDsin[24,:], fluxSEDsin[25,:], fluxSEDsin[26,:], fluxSEDsin[29,:], fluxSEDsin[30,:], fluxSEDsin[31,:], fluxSEDsin[32,:]):
-                   fil.write("%5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f \n" % (a,b,c,d,e,f,g,h,i,j,k,l,o))
+               fil.write("#flux_24mu_Spitzer flux_P70_Herschel flux_P100_Herschel flux_P160_Herschel flux_S250_Herschel flux_S350_Herschel flux_S450_JCMT flux_S500_Herschel flux_S850_JCMT flux_Band7_ALMA flux_Band6_ALMA flux_Band5_ALMA flux_Band4_ALMA flux_Band3_ALMA\n")
+               for a,b,c,d,e,f,g,h,i,j,k,l,o,p in zip(fluxSEDsin[19,:], fluxSEDsin[20,:], fluxSEDsin[21,:], fluxSEDsin[22,:], fluxSEDsin[23,:], fluxSEDsin[24,:], fluxSEDsin[25,:], fluxSEDsin[26,:], fluxSEDsin[27,:], fluxSEDsin[31,:], fluxSEDsin[32,:], fluxSEDsin[33,:], fluxSEDsin[34,:], fluxSEDsin[35,:]):
+                   fil.write("%5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f %5.7f\n" % (a,b,c,d,e,f,g,h,i,j,k,l,o,p))
    
+
 
     return (vcobright, lcobright, mvir_hostcobright)
 
 def main():
 
-    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
-    outdir= '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/Plots/'
+    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/'
+    outdir= '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/Plots/'
     obsdir= '/software/projects/pawsey0119/clagos/shark/data/'
 
     #initialize relevant matrices
     lco_vel_scaling = np.zeros(shape = (2, 4, len(vbins)))
 
-    subvols = [0,24]
+    subvols = range(64)
     #[9,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
     #[1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,32,33,34]
     #
     #[0,24]
 
     sed_file = "Sting-SED-eagle-rr14"
-    sed_file_radio = "Sting-SED-eagle-rr14-radio-only"
 
     # Loop over redshift and subvolumes
     plt = common.load_matplotlib()
-    totarea = 107.8890011908422 #deg2
+    totarea = 59.9809632235205 #deg2
+    #107.8890011908422 #deg2
     areasub = totarea/64.0 * len(subvols)  #deg2
 
     #fields_sed = {'SED/ab_dust': ('total', 'disk', 'bulge_t')}
@@ -309,7 +306,6 @@ def main():
     ids_sed, seds = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file)
     ids_sed_lir, lir = common.read_photometry_data_hdf5(lightcone_dir, fields_sed_lir, subvols, sed_file)
     ids_sed_lir, lir_bc_cont = common.read_photometry_data_hdf5(lightcone_dir, fields_sed_lir_cont, subvols, sed_file)
-    ids_sed_rad, seds_rad = common.read_photometry_data_hdf5(lightcone_dir, fields_sed, subvols, sed_file_radio)
 
     fields = {'galaxies': ('dec', 'ra', 'zobs', 'zcos',
                            'id_galaxy_sky','sfr_burst','sfr_disk','mstars_bulge','mstars_disk','rstar_bulge_apparent',
@@ -330,7 +326,7 @@ def main():
     hdf5_data_mvir = common.read_lightcone(lightcone_dir, fields_mvir, subvols, "final_mvir")
 
     nbands = len(seds[0])
-    (vcobright, lcobright, mvir_hostcobright) = prepare_data(seds, ids_sed, seds_rad, hdf5_data, hdf5_co_data, hdf5_data_groups, hdf5_data_mvir, lir, lir_bc_cont, subvols, lightcone_dir, nbands, lco_vel_scaling)
+    (vcobright, lcobright, mvir_hostcobright) = prepare_data(seds, ids_sed, hdf5_data, hdf5_co_data, hdf5_data_groups, hdf5_data_mvir, lir, lir_bc_cont, subvols, lightcone_dir, nbands, lco_vel_scaling)
     #plot_lco_vel(plt, outdir, lco_vel_scaling, vcobright, lcobright, mvir_hostcobright)
 
 

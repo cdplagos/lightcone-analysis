@@ -112,11 +112,11 @@ def sample_bothwell(seds, co, z, Lxray):
     cosleds_survey =  np.zeros(shape = (Nsampling, 10, 3))
     co_gals = np.zeros(shape = (Nsampling, 10, int(tot_gals)))
     lx_gals = np.zeros(shape = (Nsampling, int(tot_gals)))
+    z_gals =  np.zeros(shape = (Nsampling, int(tot_gals)))
 
     zmeds = np.zeros(shape = (Nsampling))
     for s in range(0,Nsampling):
         g = 0
-        z_gals =  np.zeros(shape = (int(tot_gals)))
         s850gals = np.zeros(shape = (int(tot_gals)))
         for i in range(0,nbins):
             ind = np.where((fluxes[:] > b13sources[i,0]) & (fluxes[:] < b13sources[i,1]))
@@ -131,7 +131,7 @@ def sample_bothwell(seds, co, z, Lxray):
                selected = np.random.choice(ids, size=int(b13sources[i,2]))
                for j in range(0,len(selected)):
                    s850gals[g+j] = fluxesin[selected[j]]
-                   z_gals[g+j] = zin[selected[j]]
+                   z_gals[s,g+j] = zin[selected[j]]
                    lx_gals[s,g+j] = lxin[selected[j]]
                    for l in range(0,10):
                        co_gals[s,l,g+j] = cosledsin[selected[j],l]
@@ -140,7 +140,7 @@ def sample_bothwell(seds, co, z, Lxray):
         for l in range(0,10):
             cosleds_survey[s,l,:] = us.gpercentiles(co_gals[s,l,:])
 
-        zmeds[s] = np.median(z_gals)
+        zmeds[s] = np.median(z_gals[s,:])
 
     print(np.median(zmeds))
 
@@ -148,7 +148,19 @@ def sample_bothwell(seds, co, z, Lxray):
     #ind = np.where(cosleds_survey[:,0,0] == np.max(cosleds_survey[:,0,0]))
     ind = np.random.randint(0,49)
     co_gals_selected = co_gals[ind, :, :]
-    lx_gals_selected = lx_gals[ind, :] 
+    lx_gals_selected = lx_gals[ind, :]
+    zgals_selected = z_gals[ind,:]
+    lumrat = lx_gals_selected[:]/co_gals_selected[0,:]
+   
+    print(zgals_selected.shape) 
+    faint = np.where((co_gals_selected[3,:] > 0.3) & (co_gals_selected[3,:] < 5))
+    lumrat = lumrat[faint]
+    zfaint = zgals_selected[faint]
+    xraylums = np.where((lumrat == max(lumrat)))
+    print(zfaint[xraylums])
+    xraylums = np.where((lumrat == min(lumrat)))
+    print(zfaint[xraylums])
+
     print(zmeds[ind])
 
     for l in range(0,10):
@@ -285,7 +297,7 @@ def main():
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14"
 
-    subvols = [0,1,2,3,4,5,6,7,8,9,10] #range(64) #[0,1,2,3,4,5] #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
+    subvols = [0] #,1,2,3,4,5,6,7,8,9,10] #range(64) #[0,1,2,3,4,5] #,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63]
 #[0] #range(64) #[0, 1, 6, 7, 8, 9, 11, 12, 13, 15, 16, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 36, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 52, 54, 55, 56, 57, 59, 60, 61, 62]
     #[0,1]#,3,4,5,6,7,8,9,10] #range(64) #[0,1,2,3,4,5,6,7,8,9,10] #,11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 60, 61, 62, 63]#,11,12,13,14,15,16,17,18,19,20,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) #(0,1) #range(20) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 

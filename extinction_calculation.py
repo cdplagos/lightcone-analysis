@@ -40,7 +40,7 @@ h0 = 0.677
 
 #model of Mattson et al. (2014) for the dependence of the dust-to-metal mass ratio and metallicity X/H.
 corrfactor_dm = 2.0
-polyfit_dm = [ 0.00544948, 0.00356938, -0.07893235,  0.05204814,  0.49353238] 
+polyfit_dm = [ 0.00544948, 0.00356938, -0.07893235,  0.05204814,  0.49353238]
 
 #choose dust model between mm14, rr14 and constdust
 m14 = False
@@ -49,8 +49,8 @@ constdust = False
 rr14xcoc = False
 
 #read EAGLE tables
-sdust_eaglet, taumed_eagle, taulow_eagle, tauhigh_eagle = common.load_observation('/home/clagos/shark/data/', 'Models/EAGLE/Tau5500-Trayford-EAGLE.dat', [0,1,2,3])
-sdust_eaglem, mmed_eagle, mlow_eagle, mhigh_eagle = common.load_observation('/home/clagos/shark/data/','Models/EAGLE/CFPowerLaw-Trayford-EAGLE.dat', [0,1,2,3])
+sdust_eaglet, taumed_eagle, taulow_eagle, tauhigh_eagle = common.load_observation('/software/projects/pawsey0119/clagos/shark/data/', 'Models/EAGLE/Tau5500-Trayford-EAGLE.dat', [0,1,2,3])
+sdust_eaglem, mmed_eagle, mlow_eagle, mhigh_eagle = common.load_observation('/software/projects/pawsey0119/clagos/shark/data/', 'Models/EAGLE/CFPowerLaw-Trayford-EAGLE.dat', [0,1,2,3])
 
 def interp (sdust_eagle, med_eagle, low_eagle, high_eagle):
 
@@ -190,7 +190,7 @@ def slope_diff (md, rd, hd, h0):
     return m 
 
 
-def prepare_data(hdf5_data, model_dir, subvol):
+def prepare_data(hdf5_data, model_dir, subdir, subvol):
 
     bin_it = functools.partial(us.wmedians, xbins=xmf)
 
@@ -225,7 +225,7 @@ def prepare_data(hdf5_data, model_dir, subvol):
     # will write the hdf5 files with the CO SLEDs and relevant quantities
     # will only write galaxies with mstar>0 as those are the ones being written in SFH.hdf5
     ind = np.where( (mdisk +  mbulge) > 0)
-    file_to_write = os.path.join(model_dir, 'split', 'extinction-eagle-rr14_%02d.hdf5' % subvol)
+    file_to_write = os.path.join(model_dir, subdir, 'extinction-eagle-rr14_%02d.hdf5' % subvol)
     print ('Will write extinction to %s' % file_to_write)
     hf = h5py.File(file_to_write, 'w')
     
@@ -244,11 +244,14 @@ def prepare_data(hdf5_data, model_dir, subvol):
 
 def main():
 
-    lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
-    outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/split/'
-    obsdir= '/home/clagos/shark/data/'
+    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
+    subdir = 'sublightcone/'
+    #'split/'
+    #'sublightcone/' #'split/'
+    outdir= lightcone_dir
 
-    subvols = range(64)
+    subvols = [0] 
+#range(64)
 
     plt = common.load_matplotlib()
     fields = {'galaxies': ('type', 'rgas_disk_intrinsic', 'rgas_bulge_intrinsic', 'matom_disk', 'mmol_disk', 'mgas_disk',
@@ -256,10 +259,10 @@ def main():
                            'zgas_bulge', 'mstars_disk', 'mstars_bulge','sfr_disk','sfr_burst','id_galaxy_sky', 'id_galaxy_sam','inclination',
                            'snapshot','subvolume')}
 
-    name = 'mock'
+    name = 'mock_subselection' #'mock'
     for subv in subvols:
-        hdf5_data = common.read_lightcone(lightcone_dir, fields, [subv], name)
-        prepare_data(hdf5_data, lightcone_dir, subv)
+        hdf5_data = common.read_lightcone(lightcone_dir, subdir, fields, [subv], name)
+        prepare_data(hdf5_data, lightcone_dir, subdir, subv)
 
 if __name__ == '__main__':
     main()

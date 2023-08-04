@@ -40,9 +40,9 @@ c_light = 299792458.0 #m/s
 
 # Mass function initialization
 
-mlow = -2.0
+mlow = -3.0
 mupp = 3.0
-dm = 0.25
+dm = 0.2
 mbins = np.arange(mlow,mupp,dm)
 xlf   = mbins + dm/2.0
 
@@ -51,6 +51,13 @@ mupp2 = 2
 dm2 = 0.15
 mbins2 = np.arange(mlow2,mupp2,dm2)
 xlf2   = mbins2 + dm2/2.0
+
+mlow3 = 0
+mupp3 = 50.0
+dm3 = 2.0
+mbins3 = np.arange(mlow3,mupp3,dm3)
+xlf3   = mbins3 + dm3/2.0
+
 
 zlow = 0
 zupp = 6
@@ -139,7 +146,7 @@ def plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts, zdist_cosmicvar):
 
     common.savefig(outdir, fig, "zdistribution-fluxcut-ALMAbands.pdf")
 
-def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_err, zdistfaint):
+def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_err, zdistfaint, zmedfaint):
 
     #for cumulative number counts
     xlf_obs  = xlf-dm*0.5
@@ -356,8 +363,12 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_err, zdistfaint)
             ax.errorbar(np.log10(lmg17),np.log10(pg17),yerr=[np.log10(pg17) - np.log10(pg17-dpg17dn), np.log10(pg17+dpg17up) - np.log10(pg17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='o', label='Karim+2013')
             file = obsdir+'/lf/numbercounts/ncts-band7_Oteo16.data'
             lmu17, pu17, dpu17dn, dpu17up = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
-            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(dpu17up+pu17)-np.log10(pu17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='v',label='Oteo+2016')
-
+            ax.errorbar(np.log10(lmu17),np.log10(pu17),yerr=[np.log10(pu17)-np.log10(pu17-dpu17dn), np.log10(dpu17up+pu17)-np.log10(pu17)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='D',label='Oteo+2016')
+            file = obsdir+'/lf/numbercounts/ncts850_Bethermin20.data'
+            lmu17, pu17a, dpu17upa, dpu17dna, pu17b, dpu17upb, dpu17dnb = np.loadtxt(file,usecols=[0,2,3,4,5,6,7],unpack=True)
+            ax.errorbar(np.log10(lmu17),np.log10(pu17b),yerr=[np.log10(pu17b)-np.log10(pu17b-dpu17dnb), np.log10(dpu17upb+pu17b)-np.log10(pu17b)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='^',label='Bethermin+2020')
+            ax.errorbar(np.log10(lmu17),np.log10(pu17a),yerr=[np.log10(pu17a)-np.log10(pu17a-dpu17dna), np.log10(dpu17upa+pu17a)-np.log10(pu17a)], ls='None', mfc='None', ecolor = color_observations, mec=color_observations,marker='v')
+            ax.plot([-1.54],[0.55], color = color_observations, marker='v', mfc='None')
         if(idx == 1):
             file = obsdir+'/lf/numbercounts/ncts-band8_Klitsch20.data'
             lmu17, pu17, dpu17up, dpu17dn = np.loadtxt(file,usecols=[0,1,2,3],unpack=True)
@@ -397,12 +408,14 @@ def plot_numbercounts(plt, outdir, obsdir, ncounts, ncounts_cum_err, zdistfaint)
         ind = np.where(zdistfaint[b,:] != 0)
         y = zdistfaint[b,ind]
         ax.plot(xz[ind], np.log10(y[0]), linestyle='solid', color=cols[i], label=labels[i])
+        ax.plot([zmedfaint[b],zmedfaint[b]], [3,5], linestyle='dotted', color=cols[i])
+
     common.prepare_legend(ax, cols, loc='lower center')
 
     common.savefig(outdir, fig, "number-counts-deep-FIR-ALMAv2.pdf")
 
 
-def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, zdistfaint, areasub):
+def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, ncounts_nat, ncounts_cum_nat, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, zdistfaint, zmedfaint, areasub):
 
     (dec, ra, zobs, idgal) = hdf5_data
  
@@ -416,6 +429,7 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
     #3: disk
     #4: total
     SEDs_dust   = phot_data[0]
+    print(SEDs_dust.shape)
     SEDs_dust_disk = phot_data[1]
     SEDs_dust_bulge = phot_data[2]
     SEDs_dust_bulge_d = phot_data[3]
@@ -428,10 +442,13 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
     indices = range(len(bands))
     for i, j in zip(bands, indices):
         #calculate number counts for total magnitude as well as no dust magnitudes
-        ind = np.where((SEDs_dust[i,:] > 0) & (SEDs_dust[i,:] < 40))
+        ind = np.where((SEDs_dust[i,:] > 0) & (SEDs_dust[i,:] < 50))
+        print("minimum redshift %s at band %s" % (str(min(zobs[ind])), str(i)))
         m = np.log10(10.0**(SEDs_dust[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[0,j,:] = ncounts[0,j,:] + H
+        H, bins_edges = np.histogram(10.0**m,bins=np.append(mbins3,mupp3))
+        ncounts_nat[0,j,:] = ncounts_nat[0,j,:] + H
         ncounts_cum_err[j,:] = us.compute_cosmic_variance_number_counts(areasub, m[0,:], xlf-dm*0.5, int(bins_var))
         zdist_flux_cuts[j] = bin_it(x=m[0,:],y=zobs[ind])
         zdist_cosmicvar[j] = us.compute_cosmic_variance_redshifts(m[0,:], zobs[ind], flux_threshs_log, int(bins_var))
@@ -441,21 +458,29 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
         m = np.log10(10.0**(SEDs_dust_disk[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[1,j,:] = ncounts[1,j,:] + H
+        H, bins_edges = np.histogram(10.0**m,bins=np.append(mbins3,mupp3))
+        ncounts_nat[1,j,:] = ncounts_nat[1,j,:] + H
 
         ind = np.where((SEDs_dust_bulge[i,:] > 0) & (SEDs_dust_bulge[i,:] < 40))
         m = np.log10(10.0**(SEDs_dust_bulge[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[2,j,:] = ncounts[2,j,:] + H
+        H, bins_edges = np.histogram(10.0**m,bins=np.append(mbins3,mupp3))
+        ncounts_nat[2,j,:] = ncounts_nat[2,j,:] + H
 
         ind = np.where((SEDs_dust_bulge_d[i,:] > 0) & (SEDs_dust_bulge_d[i,:] < 40))
         m = np.log10(10.0**(SEDs_dust_bulge_d[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[3,j,:] = ncounts[3,j,:] + H
+        H, bins_edges = np.histogram(10.0**m,bins=np.append(mbins3,mupp3))
+        ncounts_nat[3,j,:] = ncounts_nat[3,j,:] + H
 
         ind = np.where((SEDs_dust_bulge_m[i,:] > 0) & (SEDs_dust_bulge_m[i,:] < 40))
         m = np.log10(10.0**(SEDs_dust_bulge_m[i,ind]/(-2.5))*3631.0*1e3) #in mJy
         H, bins_edges = np.histogram(m,bins=np.append(mbins,mupp))
         ncounts[4,j,:] = ncounts[4,j,:] + H
+        H, bins_edges = np.histogram(10.0**m,bins=np.append(mbins3,mupp3))
+        ncounts_nat[4,j,:] = ncounts_nat[4,j,:] + H
 
         #redshift distribution for sources brighter than 5mJy
         ind = np.where((SEDs_dust[i,:] > -10) & (SEDs_dust[i,:] < 14.6525))
@@ -466,6 +491,7 @@ def prepare_data(phot_data, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts,
         ind = np.where((SEDs_dust[i,:] > -10) & (SEDs_dust[i,:] < 18.900065622282231))
         H, bins_edges = np.histogram(zobs[ind],bins=np.append(zbins,zupp))
         zdistfaint[j,:] = zdistfaint[j,:] + H
+        zmedfaint[j] = np.median(zobs[ind])
 
 def main():
 
@@ -476,7 +502,8 @@ def main():
 
     Variable_Ext = True
     sed_file = "Sting-SED-eagle-rr14"
-    subvols = range(64) #,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63] #range(64) #[0] #, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]#, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 60, 61, 62, 63) #range(11) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
+    subvols = range(64) #[1,6] #,8,9,11.13,15,16,17,18,20,21,22,25,29,31,33,36,39,40,43,46,47,48,49,50,52,55,56,57,59,60,61,62]
+    #0,2,3] #range(64) #,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63] #range(64) #[0] #, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]#, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 60, 61, 62, 63) #range(11) #(40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) 
     #0,1,2,3,4,5,6,7,8,9,10,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63) # #(0,10,11,12,13,14,15,16,17) #2,3,4) #range(64) 
 
     # Loop over redshift and subvolumes
@@ -486,7 +513,14 @@ def main():
 
     areasub = totarea/64.0 * len(subvols)  #deg2
 
-    bands = (24, 25, 26, 27, 28, 29, 30, 31, 32) #(26, 27, 28, 29, 30, 31, 32)
+   #(0): "FUV_GALEX", "NUV_GALEX", "u_SDSS", "g_SDSS", "r_SDSS", "i_SDSS",
+   #(6): "z_SDSS", "Y_VISTA", "J_VISTA", "H_VISTA", "K_VISTA", "W1_WISE",
+   #(12): "I1_Spitzer", "I2_Spitzer", "W2_WISE", "I3_Spitzer", "I4_Spitzer",
+   #(17): "W3_WISE", "W4_WISE", "P70_Herschel", "P100_Herschel",
+   #(21): "P160_Herschel", "S250_Herschel", "S350_Herschel", "S450_JCMT",
+   #(25): "S500_Herschel", "S850_JCMT", "Band9_ALMA", "Band8_ALMA",
+   #(29): "Band7_ALMA", "Band6_ALMA", "Band5_ALMA", "Band4_ALMA", "Band3_ALMA"
+    bands = (24, 25, 26, 27, 28, 29, 30, 31, 32) #, 33) #(26, 27, 28, 29, 30, 31, 32)
 
     fields_sed = {'SED/ap_dust': ('total', 'disk', 'bulge_t',  'bulge_d', 'bulge_m')}
 
@@ -501,13 +535,17 @@ def main():
     ncounts = np.zeros(shape = (5, len(bands), len(mbins)))
     ncounts_cum_err = np.zeros(shape = (len(bands), len(mbins)))
     ncounts_cum = np.zeros(shape = (5, len(bands), len(mbins)))
+    ncounts_nat = np.zeros(shape = (5, len(bands), len(mbins3)))
+    ncounts_cum_nat = np.zeros(shape = (5, len(bands), len(mbins3)))
 
     zdist = np.zeros(shape = (len(bands), len(zbins)))
     zdistfaint = np.zeros(shape = (len(bands), len(zbins)))
+    zmedfaint = np.zeros(shape = (len(bands)))
+
     zdist_flux_cuts = np.zeros(shape = (len(bands), 3, len(flux_threshs)))
     zdist_cosmicvar = np.zeros(shape = (len(bands), len(flux_threshs)))
 
-    prepare_data(seds, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, zdistfaint, areasub)
+    prepare_data(seds, ids_sed, hdf5_data, subvols, lightcone_dir, ncounts, ncounts_cum_err, ncounts_nat, ncounts_cum_nat, nbands, zdist, bands, zdist_flux_cuts, zdist_cosmicvar, zdistfaint, zmedfaint, areasub)
 
     if(totarea > 0.):
         for b in range(0,len(bands)):
@@ -517,10 +555,29 @@ def main():
                 ncounts_cum[2,b,j] = np.sum(ncounts[2,b,j:len(mbins)])
                 ncounts_cum[3,b,j] = np.sum(ncounts[3,b,j:len(mbins)])
                 ncounts_cum[4,b,j] = np.sum(ncounts[4,b,j:len(mbins)])
+            for j in range(len(mbins3)):
+                ncounts_cum_nat[0,b,j] = np.sum(ncounts_nat[0,b,j:len(mbins3)])
+                ncounts_cum_nat[1,b,j] = np.sum(ncounts_nat[1,b,j:len(mbins3)])
+                ncounts_cum_nat[2,b,j] = np.sum(ncounts_nat[2,b,j:len(mbins3)])
+                ncounts_cum_nat[3,b,j] = np.sum(ncounts_nat[3,b,j:len(mbins3)])
+                ncounts_cum_nat[4,b,j] = np.sum(ncounts_nat[4,b,j:len(mbins3)])
 
-            print('band', b)
-            for m,a,b,c in zip(xlf,ncounts[0,b,:],ncounts[1,b,:],ncounts[2,b,:]):
-                print( m,a/areasub,b/areasub,c/areasub)
+            print('#Cumulative number counts at band', b)
+            print('#log10(S_low/mJy) N_total[deg^-2] N_bulge[deg^-2] N_disk[deg^-2]')
+            for m,a,c,d in zip(xlf-dm*0.5,ncounts_cum[0,b,:],ncounts_cum[1,b,:],ncounts_cum[2,b,:]):
+                print( m,a/areasub,c/areasub,d/areasub)
+            #print('#S_low/mJy N_total[deg^-2] N_bulge[deg^-2] N_disk[deg^-2]')
+            #for m,a,c,d in zip(xlf3-dm3*0.5,ncounts_cum_nat[0,b,:],ncounts_cum_nat[1,b,:],ncounts_cum_nat[2,b,:]):
+            #    print( m,a/areasub,c/areasub,d/areasub)
+
+            print('#Differential number counts at band', b)
+            print('#log10(S_mid/mJy) N_total[deg^-2 dex^-1] N_bulge[deg^-2 dex^-1] N_disk[deg^-2 dex^-1]')
+            for d,e,f,g in zip(xlf[:],ncounts[0,b,:],ncounts[1,b,:],ncounts[2,b,:]):
+                print(d,e/areasub/dm,f/areasub/dm,g/areasub/dm)
+            #print('#S_mid/mJy N_total[deg^-2 mJy^-1] N_bulge[deg^-2 mJy^-1] N_disk[deg^-2 mJy^-1]')
+            #for d,e,f,g in zip(xlf3[:],ncounts_nat[0,b,:],ncounts_nat[1,b,:],ncounts_nat[2,b,:]):
+            #    print(d,e/areasub/dm3,f/areasub/dm3,g/areasub/dm3)
+
         ncounts   = ncounts/areasub/dm
         ncounts_cum = ncounts_cum/areasub
         zdist = zdist/areasub
@@ -535,7 +592,7 @@ def main():
     if(Variable_Ext):
        outdir = os.path.join(outdir, 'eagle-rr14')
 
-    plot_numbercounts(plt, outdir, obsdir, ncounts_cum, ncounts_cum_err, zdistfaint)
+    plot_numbercounts(plt, outdir, obsdir, ncounts_cum, ncounts_cum_err, zdistfaint, zmedfaint)
     plot_redshift(plt, outdir, obsdir, zdist, zdist_flux_cuts, zdist_cosmicvar)
 
 if __name__ == '__main__':

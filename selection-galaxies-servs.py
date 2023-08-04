@@ -22,13 +22,18 @@ import numpy as np
 import common
 import os
 
+import h5py
+
 ##################################
 h0 = 0.6751
 
-def prepare_data(phot_data, phot_dataab, ids_sed, hdf5_data, subvols, lightcone_dir,  nbands):
+def prepare_data(phot_data, phot_dataab, ids_sed, hdf5_data, hdf5_data_mvir, subvols, lightcone_dir,  nbands):
 
-    (dec, ra, zobs, idgal, sfrb, sfrd, mstarb, mstard, rsb, rsd) = hdf5_data
+    (dec, ra, zobs, idgal, sfrb, sfrd, mstarb, mstard, rsb, rsd, mvir, typeg,
+     id_galaxy_sam, snapshot, subvolume, id_halo_sam) = hdf5_data
    
+    (mvirz0, idgal, snap, subv) = hdf5_data_mvir
+
     #(SCO, id_cos) = co_hdf5_data
     #components of apparent magnitudes:
     #(len(my_data), 2, 2, 5, nbands)
@@ -46,6 +51,8 @@ def prepare_data(phot_data, phot_dataab, ids_sed, hdf5_data, subvols, lightcone_
     sfrtot = np.log10((sfrb+sfrd)/h0/1e9)
     re = (rsb*mstarb + mstard*rsd) / (mstarb+mstard)
     BT = mstarb / (mstarb+mstard)
+    mvir = np.log10(mvir/h0)
+    mvir_z0 = np.log10(mvirz0/h0)
 
     bands = (2, 3, 4, 5, 6, 10, 12, 13)
 
@@ -57,26 +64,30 @@ def prepare_data(phot_data, phot_dataab, ids_sed, hdf5_data, subvols, lightcone_
    #(25): "S500_Herschel", "S850_JCMT", "Band9_ALMA", "Band8_ALMA",
    #(29): "Band7_ALMA", "Band6_ALMA", "Band5_ALMA", "Band4_ALMA"
 
-    with open('/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Shark-deep-opticalLightcone-Hosein2020.txt', 'wb') as fil:
-         fil.write("#Galaxies from Shark (Lagos et al. 2018) in the optical-deep lightcone\n")
-         fil.write("#SED modelling as described in Lagos et al. (2019).\n")
+    with open('/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Shark-deep-opticalLightcone-SERVS-extended.txt', 'w') as fil:
+         fil.write("#Galaxies from Shark (Lagos et al. 2018; MNRAS, 481, 3573L) in the optical-deep lightcone\n")
+         fil.write("#SED modelling as described in Lagos et al. (2019; MNRAS, 489, 4196L).\n")
          fil.write("#area 107.889 deg2\n")
-         fil.write("#mag_y < 23.5\n")
-         fil.write("#redshift < 1.5\n")
+         fil.write("#mag_Spitzer3.6 < 24.5\n")
+         fil.write("#redshift < 6\n")
          fil.write("#units\n")
          fil.write("#mstar[Msun]\n")
          fil.write("#sfr[Msun/yr]\n")
          fil.write("#re[arcsec]\n")
          fil.write("#magnitudes AB\n")
+         fil.write("#Mhosthalo[Msun]: host halo mass at the current redshift\n")
+         fil.write("#Mhosthaloz0[Msun]: host halo mass this galaxy will end up at z=0\n")
+         fil.write("#galaxy_type: =0 for centrals, (1 or 2 are satellites, with 1 being those in subhalos and 2 orphans)\n")
          fil.write("#\n")
-         fil.write("#id_galaxy_sky dec ra redshift log10(mstar) log10(sfr) re B/T app_u app_g app_r app_i app_z app_VISTAY app_VISTAJ app_VISTAH app_VISTAK app_W1 app_Spitzer1 app_Spitzer2 app_W2 abs_u abs_g abs_r abs_i abs_z abs_VISTAY abs_VISTAJ abs_VISTAH abs_VISTAK abs_W1 abs_Spitzer1 abs_Spitzer2 abs_W2\n")
-         for ids, a,b,c,d,e,f,g,h1,i1,j1,k1,l1,m1,n1,o1,p1,q1,r1,s1,t1,h2,i2,j2,k2,l2,m2,n2,o2,p2,q2,r2,s2,t2 in zip(idgal, dec, ra, zobs, mstartot, sfrtot, re, BT, SEDs_dust[2], SEDs_dust[3], SEDs_dust[4], SEDs_dust[5], SEDs_dust[6], SEDs_dust[7], SEDs_dust[8], SEDs_dust[9], SEDs_dust[10], SEDs_dust[11], SEDs_dust[12], SEDs_dust[13],SEDs_dust[14],  SEDs_dustab[2], SEDs_dustab[3], SEDs_dustab[4], SEDs_dustab[5], SEDs_dustab[6], SEDs_dustab[7], SEDs_dustab[8], SEDs_dustab[9], SEDs_dustab[10], SEDs_dustab[11], SEDs_dustab[12], SEDs_dustab[13], SEDs_dustab[14]):
-             if(l1 > 0 and m1 < 23.5 and c < 1.5):
-                fil.write("%20.0f %5.10f %5.10f %5.7f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n" % (ids, a,b,c,d,e,f,g,h1,i1,j1,k1,l1,m1,n1,o1,p1,q1,r1,s1,t1,h2,i2,j2,k2,l2,m2,n2,o2,p2,q2,r2,s2,t2))
+         fil.write("#id_galaxy_sky dec ra redshift log10(mstar) log10(sfr) re B/T app_u app_g app_r app_i app_z app_VISTAY app_VISTAJ app_VISTAH app_VISTAK app_W1 app_Spitzer1 app_Spitzer2 app_W2 abs_u abs_g abs_r abs_i abs_z abs_VISTAY abs_VISTAJ abs_VISTAH abs_VISTAK abs_W1 abs_Spitzer1 abs_Spitzer2 abs_W2 log10(Mhosthalo) log10(Mhosthalo_z0) galaxy_type\n")
+         for ids, a,b,c,d,e,f,g,h1,i1,j1,k1,l1,m1,n1,o1,p1,q1,r1,s1,t1,h2,i2,j2,k2,l2,m2,n2,o2,p2,q2,r2,s2,t2,u2,v2,w2 in zip(idgal, dec, ra, zobs, mstartot, sfrtot, re, BT, SEDs_dust[2], SEDs_dust[3], SEDs_dust[4], SEDs_dust[5], SEDs_dust[6], SEDs_dust[7], SEDs_dust[8], SEDs_dust[9], SEDs_dust[10], SEDs_dust[11], SEDs_dust[12], SEDs_dust[13],SEDs_dust[14],  SEDs_dustab[2], SEDs_dustab[3], SEDs_dustab[4], SEDs_dustab[5], SEDs_dustab[6], SEDs_dustab[7], SEDs_dustab[8], SEDs_dustab[9], SEDs_dustab[10], SEDs_dustab[11], SEDs_dustab[12], SEDs_dustab[13], SEDs_dustab[14], mvir, mvir_z0, typeg):
+             if(r1 > 0 and r1 <= 24.5 and c <= 6):
+                fil.write("%20.0f %5.10f %5.10f %5.7f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n" % (ids, a,b,c,d,e,f,g,h1,i1,j1,k1,l1,m1,n1,o1,p1,q1,r1,s1,t1,h2,i2,j2,k2,l2,m2,n2,o2,p2,q2,r2,s2,t2,u2,v2,w2))
 
 def main():
 
     lightcone_dir = '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/'
+    sam_dir = '/group/pawsey0119/clagos/SHARK_Out/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/'
     outdir= '/group/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical/Plots/'
     obsdir= '/home/clagos/shark/data/'
 
@@ -100,12 +111,16 @@ def main():
     ids_sed, sedsab = common.read_photometry_data_hdf5(lightcone_dir, fields_absed, subvols, sed_file)
 
     fields = {'galaxies': ('dec', 'ra', 'zobs',
-                           'id_galaxy_sky','sfr_burst','sfr_disk','mstars_bulge','mstars_disk','rstar_bulge_apparent','rstar_disk_apparent')}
+                           'id_galaxy_sky','sfr_burst','sfr_disk','mstars_bulge',
+                           'mstars_disk','rstar_bulge_apparent','rstar_disk_apparent',
+                           'mvir_hosthalo','type','id_galaxy_sam','snapshot','subvolume','id_halo_sam')}
 
-    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols)
+    fields_mvir = {'galaxies': ('mvir_z0','id_galaxy_sam','snapshot','subvolume')}
+    hdf5_data = common.read_lightcone(lightcone_dir, fields, subvols, "mocksky")
+    hdf5_data_mvir = common.read_lightcone(lightcone_dir, fields_mvir, subvols, "final_mvir")
 
     nbands = len(seds[0])
-    prepare_data(seds, sedsab, ids_sed, hdf5_data, subvols, lightcone_dir, nbands)
+    prepare_data(seds, sedsab, ids_sed, hdf5_data, hdf5_data_mvir, subvols, lightcone_dir, nbands)
 
 
 if __name__ == '__main__':
