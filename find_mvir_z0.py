@@ -59,7 +59,7 @@ def compute_z0_mvir(hdf5_data, sam_dir, subvol, output_fname):
 
 def main():
 
-    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/'
+    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
     sam_dir = '/scratch/pawsey0119/clagos/SHARK_Out/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/'
     output_dir = lightcone_dir + 'split/'
     bname = 'final_mvir'
@@ -72,7 +72,7 @@ def main():
                            'mvir_hosthalo','type','id_galaxy_sam','snapshot','subvolume','id_halo_sam')}
 
     for subv in subvols:
-        hdf5_data = common.read_lightcone(lightcone_dir, fields, [subv], "mock")
+        hdf5_data = common.read_lightcone(lightcone_dir, 'split/', fields, [subv], "mock")
         output_fname = os.path.join(output_dir, bname + "_%02d.hdf5" % subv)
         compute_z0_mvir(hdf5_data, sam_dir, subv, output_fname)
     

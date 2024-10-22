@@ -245,12 +245,13 @@ def prepare_data(hdf5_data, model_dir, subdir, subvol):
 def main():
 
     lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
-    subdir = 'sublightcone/'
+    subdir = 'split/'
+    #'sublightcone/'
     #'split/'
     #'sublightcone/' #'split/'
     outdir= lightcone_dir
 
-    subvols = [0] 
+    subvols = [0,1,2,3] 
 #range(64)
 
     plt = common.load_matplotlib()
@@ -259,7 +260,7 @@ def main():
                            'zgas_bulge', 'mstars_disk', 'mstars_bulge','sfr_disk','sfr_burst','id_galaxy_sky', 'id_galaxy_sam','inclination',
                            'snapshot','subvolume')}
 
-    name = 'mock_subselection' #'mock'
+    name = 'mock'
     for subv in subvols:
         hdf5_data = common.read_lightcone(lightcone_dir, subdir, fields, [subv], name)
         prepare_data(hdf5_data, lightcone_dir, subdir, subv)

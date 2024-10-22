@@ -26,12 +26,20 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+redshift_min = 3
+redshift_max = 3.5
+mstars_min = 1e10
+ssfr_selection = 1e-10
+name = "passive_z3"
+
 def _copy_subvolume(f_in, output_fname, subvol):
 
     galaxies = f_in['galaxies']
 
     # Skip empty selections
-    selection = np.where((galaxies['subvolume'][()] == subvol) & (galaxies['zobs'][()] < 2) & (galaxies['mstars_bulge'][()] + galaxies['mstars_disk'][()] > 5e8))[0].tolist()
+    selection = np.where((galaxies['subvolume'][()] == subvol) & (galaxies['zobs'][()] < redshift_max) & (galaxies['zobs'][()] > redshift_min) & 
+                         (galaxies['mstars_bulge'][()] + galaxies['mstars_disk'][()] > mstars_min) &  #stellar mass selection
+                         ((galaxies['sfr_burst'][()] + galaxies['sfr_disk'][()])/(galaxies['mstars_bulge'][()] + galaxies['mstars_disk'][()]) < ssfr_selection))[0].tolist() #ssfr selection
     if not selection:
         logger.warning('No data found for subvolume %d', subvol)
         return
@@ -66,7 +74,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     bname, _ = os.path.splitext(os.path.basename(opts.input))
-    output_fname_pattern = os.path.join(opts.output_dir, bname + "_subselection_%02d.hdf5")
+    output_fname_pattern = os.path.join(opts.output_dir, bname + "_" + name + "_%02d.hdf5")
 
     with h5py.File(opts.input) as f_in:
         subvols = f_in['galaxies']['subvolume']

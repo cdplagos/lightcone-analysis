@@ -246,8 +246,8 @@ def prepare_data(hdf5_data, outdir, subvol, lightcone_dir):
 
 def main():
 
-    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/'
-    outdir= '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/ultradeep-optical-narrow/split-CO/'
+    lightcone_dir = '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/'
+    outdir= '/scratch/pawsey0119/clagos/Stingray/output/medi-SURFS/Shark-TreeFixed-ReincPSO-kappa0p002/deep-optical-final/split-CO/'
     obsdir= '/software/projects/pawsey0119/clagos/git/shark/data/'
 
     subvols = range(64) 
@@ -260,7 +260,7 @@ def main():
                            'rstar_bulge_intrinsic', 'zgas_disk', 'zgas_bulge', 'sfr_disk', 'sfr_burst', 
                            'mgas_disk','mgas_bulge', 'dc', 'mbh','mbh_acc_hh','mbh_acc_sb','jdisk','jbulge','inclination')}
     for sv in subvols:
-       hdf5_data = common.read_lightcone(lightcone_dir, fields, [sv], 'mock')
+       hdf5_data = common.read_lightcone(lightcone_dir, 'split/', fields, [sv], 'mock')
        prepare_data(hdf5_data, outdir, sv, lightcone_dir)
 
 if __name__ == '__main__':
